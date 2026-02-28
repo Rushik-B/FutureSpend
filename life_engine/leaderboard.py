@@ -1,6 +1,8 @@
 def calculate_leaderboard(participants,challenge_target=None):
     if not participants:
         return []
+
+        
     sorted_participants=sorted(participants,key=lambda x:x['spent'])
     ranked=[]
     current_rank=1

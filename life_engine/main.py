@@ -4,6 +4,9 @@ from typing import List, Optional
 from parser import parse_calendar_events
 from prediction import predict_spending as run_prediction
 from element_of_game import generate_challenge
+
+from typing import List,Optional
+from leaderboard import calculate_leaderboard
 app=FastAPI()
 
 class CalendarEvent(BaseModel):
@@ -32,9 +35,33 @@ class ChallengeResponse(BaseModel):
     suggested_friends:List[str]
     message:str
 
+class Participant(BaseModel):
+    name:str
+    spent:float
+
+class LeaderboardRequest(BaseModel):
+    participants:List[Participant]
+    challenge_target:Optional[float]=None
+
+class LeaderboardEntry(BaseModel):
+    name:str
+    spent:float
+    rank:int
+    status:Optional[str]=None
+
+class LeaderboardResponse(BaseModel):
+    leaderboard:List[LeaderboardEntry]
+
 @app.get("/")
 def read_root():
     return {"message": "working"}
+
+@app.post("/leaderboard",response_model=LeaderboardResponse)
+def leaderboard(request:LeaderboardRequest):
+    participants_dict=[p.dict() for p in request.participants]
+    result=calculate_leaderboard(participants_dict,request.challenge_target)
+    return {"leaderboard":result}
+
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(request:PredictRequest):
