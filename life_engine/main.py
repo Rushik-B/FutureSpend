@@ -4,8 +4,6 @@ from typing import List, Optional
 from parser import parse_calendar_events
 from prediction import predict_spending as run_prediction
 from element_of_game import generate_challenge
-
-from typing import List,Optional
 from leaderboard import calculate_leaderboard
 app=FastAPI()
 
@@ -58,7 +56,7 @@ def read_root():
 
 @app.post("/leaderboard",response_model=LeaderboardResponse)
 def leaderboard(request:LeaderboardRequest):
-    participants_dict=[p.dict() for p in request.participants]
+    participants_dict=[p.model_dump() for p in request.participants]
     result=calculate_leaderboard(participants_dict,request.challenge_target)
     return {"leaderboard":result}
 
