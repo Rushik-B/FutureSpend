@@ -117,51 +117,36 @@ def challenge(request: ChallengeRequest):
 # ── Bank-personalized prediction helper ─────────────────────────────────────
 
 
-def _adjust_prediction_with_bank(prediction: dict, user_id: str = "user_123") -> dict:
-    """
-    Reads recent transactions from mock bank and adjusts predicted spending
-    based on actual recent spending patterns.
-    """
-    txn_resp = get_transactions(user_id, limit=10)
-    bal_resp = get_balance(user_id)
-
+def _adjust_prediction_with_bank(prediction: dict,user_id:str="user_123")->dict:
+    txn_resp=get_transactions(user_id,limit=10)
+    bal_resp=get_balance(user_id)
     if not txn_resp.data or not txn_resp.data.get("transactions"):
         return prediction
+    transactions=txn_resp.data["transactions"]
+    balance=bal_resp.data.get("balance",0) if bal_resp.data else 0
 
-    transactions = txn_resp.data["transactions"]
-    balance = bal_resp.data.get("balance", 0) if bal_resp.data else 0
-
-    # Calculate recent daily average from spending transactions
-    spending_txns = [t for t in transactions if t["amount"] < 0]
+    spending_txns=[t for t in transactions if t["amount"]<0]
     if spending_txns:
-        recent_avg = abs(sum(t["amount"] for t in spending_txns)) / max(len(spending_txns), 1)
+        recent_avg=abs(sum(t["amount"] for t in spending_txns))/max(len(spending_txns),1)
     else:
-        recent_avg = 0
+        recent_avg=0
 
-    # Blend: 70% calendar prediction + 30% bank-history average (scaled to same event count)
-    predicted_total = prediction["total_predicted"]
-    bank_adjusted = round(0.7 * predicted_total + 0.3 * (recent_avg * len(prediction.get("breakdown", {}))), 2)
-
+    predicted_total=prediction["total_predicted"]
+    bank_adjusted=round(0.7*predicted_total+0.3*(recent_avg*len(prediction.get("breakdown",{}))), 2)
     return {
         **prediction,
-        "total_predicted": bank_adjusted,
-        "bank_adjusted": True,
-        "bank_balance": balance,
-        "recent_daily_avg": round(recent_avg, 2),
-        "original_total": predicted_total,
+        "total_predicted":bank_adjusted,
+        "bank_adjusted":True,
+        "bank_balance":balance,
+        "recent_daily_avg":round(recent_avg,2),
+        "original_total":predicted_total,
     }
-
-
-# ── Calendar → Parser → Predictor → Challenge (full flow) ──────────────────
-
-
 class AnalyzeRequest(BaseModel):
-    user_id: Optional[str] = "user_123"
-    use_mock: Optional[bool] = True
-    include_bank_data: Optional[bool] = True
+    user_id: Optional[str]="user_123"
+    use_mock: Optional[bool]=True
+    include_bank_data: Optional[bool]=True
 
-
-_MOCK_EVENTS_FOR_ENGINE = [
+_MOCK_EVENTS_FOR_ENGINE=[
     {"title": "Team lunch - Downtown", "location": "Earls Restaurant",
      "start_time": "2026-03-03T12:00:00", "attendees": 4},
     {"title": "Coffee with Sarah", "location": "Starbucks",
@@ -179,7 +164,6 @@ _MOCK_EVENTS_FOR_ENGINE = [
     {"title": "Starbucks before class", "location": "Starbucks",
      "start_time": "2026-03-05T08:00:00", "attendees": 1},
 ]
-
 
 @app.post("/calendar/analyze")
 def calendar_analyze(request: AnalyzeRequest):
@@ -232,7 +216,6 @@ def calendar_analyze(request: AnalyzeRequest):
         "challenge": challenge_result,
         "leaderboard": leaderboard_result,
     }
-
 
 # ── Original engine endpoint (preserved) ────────────────────────────────────
 
