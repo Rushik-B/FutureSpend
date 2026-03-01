@@ -30,6 +30,19 @@ interface Message {
   actions?: Array<{ id: string; label: string; impact: string; type: string }>;
 }
 
+type CoachAction = NonNullable<Message["actions"]>[number];
+type ActionStatus = "idle" | "loading" | "done" | "error";
+
+function parseActionAmount(action: CoachAction): number | null {
+  const source = `${action.label} ${action.impact}`;
+  const match = source.match(/\$(-?\d+(?:\.\d{1,2})?)/);
+  if (!match) return null;
+
+  const amount = Number.parseFloat(match[1]);
+  if (Number.isNaN(amount)) return null;
+  return Math.max(0, amount);
+}
+
 /* ─── Suggested prompts ─── */
 
 const PROMPTS = [
@@ -89,6 +102,7 @@ export default function CoachPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [streamId, setStreamId] = useState<string | null>(null);
+  const [actionStatus, setActionStatus] = useState<Record<string, ActionStatus>>({});
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [monthlyBudget, setMonthlyBudget] = useState(getStoredMonthlyBudget);
   const [sessionId] = useState(() => createChatSessionId("coach"));
@@ -211,6 +225,59 @@ export default function CoachPage() {
 
   const isEmpty = messages.length === 0 && !isLoading;
 
+  const applyAction = useCallback(
+    async (action: CoachAction) => {
+      if (actionStatus[action.id] === "loading" || actionStatus[action.id] === "done") return;
+      if (isLoading || streamRef.current) return;
+
+      setActionStatus((prev) => ({ ...prev, [action.id]: "loading" }));
+
+      try {
+        if (action.type === "cap" || /lock\s*\$/i.test(action.label)) {
+          const amount = parseActionAmount(action);
+          if (amount === null) {
+            throw new Error("Could not detect a dollar amount for this vault action.");
+          }
+
+          const result = await api.bankLock(amount, "default", `coach-action:${action.id}`);
+          if (!result.ok) {
+            throw new Error(result.error ?? "Vault lock failed.");
+          }
+
+          const amt = amount.toFixed(2);
+          setActionStatus((prev) => ({ ...prev, [action.id]: "done" }));
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `a-${Date.now()}`,
+              role: "assistant",
+              content: `Done - locked $${amt} in your default savings vault.`,
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+          return;
+        }
+
+        setActionStatus((prev) => ({ ...prev, [action.id]: "done" }));
+        await sendMessage(`Apply this action: ${action.label}`);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Something went wrong while applying this action.";
+        setActionStatus((prev) => ({ ...prev, [action.id]: "error" }));
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `a-${Date.now()}`,
+            role: "assistant",
+            content: `I could not apply "${action.label}" yet: ${message}`,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      }
+    },
+    [actionStatus, isLoading, sendMessage]
+  );
+
   return (
     <PageShell>
       <div className="relative flex h-full flex-col overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(46,144,250,0.18),_transparent_34%),radial-gradient(circle_at_85%_12%,_rgba(135,91,247,0.14),_transparent_28%),linear-gradient(180deg,_rgba(16,18,24,0.98)_0%,_rgba(9,9,11,1)_38%,_rgba(6,6,8,1)_100%)]">
@@ -326,12 +393,35 @@ export default function CoachPage() {
                   {msg.actions && msg.actions.length > 0 && msg.id !== streamId && (
                     <div className="flex flex-wrap gap-2">
                       {msg.actions.map((action) => (
-                        <span
+                        <button
                           key={action.id}
-                          className="inline-flex items-center rounded-full border border-white/[0.14] bg-white/[0.08] px-3.5 py-1.5 text-sm font-bold text-white"
+                          type="button"
+                          onClick={() => void applyAction(action)}
+                          disabled={
+                            isLoading ||
+                            !!streamId ||
+                            actionStatus[action.id] === "loading" ||
+                            actionStatus[action.id] === "done"
+                          }
+                          className={cn(
+                            "inline-flex items-center rounded-full border px-3.5 py-1.5 text-sm font-bold transition-colors",
+                            actionStatus[action.id] === "done"
+                              ? "border-success/35 bg-success/15 text-success"
+                              : "border-white/[0.14] bg-white/[0.08] text-white hover:border-white/[0.26] hover:bg-white/[0.12]",
+                            (isLoading ||
+                              !!streamId ||
+                              actionStatus[action.id] === "loading" ||
+                              actionStatus[action.id] === "done") &&
+                              "cursor-not-allowed opacity-70"
+                          )}
+                          aria-label={`Apply action: ${action.label}`}
                         >
-                          {action.label}
-                        </span>
+                          {actionStatus[action.id] === "loading"
+                            ? `Applying: ${action.label}`
+                            : actionStatus[action.id] === "done"
+                            ? `Applied: ${action.label}`
+                            : action.label}
+                        </button>
                       ))}
                     </div>
                   )}
