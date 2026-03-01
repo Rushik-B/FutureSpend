@@ -8,9 +8,10 @@ from the engine branch while adding the full agent-powered pipeline.
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from typing import Any, List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -49,12 +50,329 @@ app.add_middleware(
 
 # Per-session orchestrator instances (in production: keyed by user ID)
 _sessions: dict[str, Orchestrator] = {}
+_DEFAULT_MONTHLY_BUDGET = 1800.0
+_DEFAULT_SPENT_SO_FAR = 620.0
+_DEMO_PROFILE = {
+    "name": "Alex Demo",
+    "email": "alex@example.com",
+    "points": 2340,
+    "tier": "Silver Saver",
+}
+_FRIEND_SUGGESTIONS = [
+    "Jordan Lee",
+    "Sam Park",
+    "Taylor Kim",
+    "Morgan Walsh",
+]
+
+_SANKEY_CATEGORY_COLORS: dict[str, str] = {
+    "food": "#F79009",
+    "transport": "#2E90FA",
+    "social": "#9E77ED",
+    "entertainment": "#EC2222",
+    "other": "#5C5C5C",
+}
 
 
 def _get_orchestrator(session_id: str = "default") -> Orchestrator:
     if session_id not in _sessions:
         _sessions[session_id] = Orchestrator()
     return _sessions[session_id]
+
+
+def _compute_health_score(forecast: dict[str, Any]) -> int:
+    """
+    Compute a demo-friendly 0..100 financial health score from forecast state.
+    """
+    remaining = float(forecast.get("remainingBudget", 0.0) or 0.0)
+    budget = float(forecast.get("monthlyBudget", 0.0) or 0.0)
+    ratio = remaining / budget if budget > 0 else 0.0
+    ratio = max(0.0, min(1.0, ratio))
+
+    base = int(ratio * 80)
+    risk = str(forecast.get("riskScore", "MED"))
+    bonus = {"LOW": 20, "MED": 5, "HIGH": -10}.get(risk, 0)
+    return max(0, min(100, base + bonus))
+
+
+def _build_dashboard_sankey(forecast: dict[str, Any]) -> dict[str, Any]:
+    """
+    Convert forecast.byCategory into frontend Sankey format.
+    Node 0 is the weekly total root node.
+    """
+    total = float(forecast.get("next7DaysTotal", 0.0) or 0.0)
+    categories = forecast.get("byCategory", []) or []
+
+    nodes: list[dict[str, Any]] = [
+        {
+            "name": "This Week",
+            "value": round(total, 2),
+            "percentage": 100,
+            "color": "#2E90FA",
+        }
+    ]
+    links: list[dict[str, Any]] = []
+
+    for idx, cat in enumerate(categories, start=1):
+        raw_key = str(cat.get("key", cat.get("name", "other"))).lower()
+        key = raw_key.strip()
+        color = _SANKEY_CATEGORY_COLORS.get(key, _SANKEY_CATEGORY_COLORS["other"])
+        value = float(cat.get("value", 0.0) or 0.0)
+        pct = round((value / total) * 100, 1) if total > 0 else 0.0
+        name = str(cat.get("name", key.title()))
+
+        nodes.append(
+            {
+                "name": name,
+                "value": round(value, 2),
+                "percentage": pct,
+                "color": color,
+            }
+        )
+        links.append(
+            {
+                "source": 0,
+                "target": idx,
+                "value": round(value, 2),
+                "color": color,
+                "percentage": pct,
+            }
+        )
+
+    return {"nodes": nodes, "links": links, "currencySymbol": "CA$"}
+
+
+def _serialize_event_value(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return value
+
+
+def _build_spending_history(current_total: float) -> list[dict[str, Any]]:
+    ratios = [0.78, 0.99, 0.92, 0.70, 0.85, 1.02]
+    base = max(current_total, 1.0)
+    history = []
+    for index, ratio in enumerate(ratios, start=1):
+        predicted = round(base * ratio)
+        actual = round(predicted * (0.93 + (index % 3) * 0.04))
+        history.append({
+            "week": f"Jan W{index}" if index <= 4 else f"Feb W{index - 4}",
+            "predicted": predicted,
+            "actual": actual,
+        })
+    history.append({"week": "Mar W1", "predicted": round(base), "actual": None})
+    return history
+
+
+def _build_health_score_history(current_score: int) -> list[dict[str, Any]]:
+    months = ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"]
+    offsets = [-18, -12, -8, -4, -2, 0]
+    return [
+        {
+            "date": month,
+            "score": max(0, min(100, current_score + offset)),
+        }
+        for month, offset in zip(months, offsets)
+    ]
+
+
+def _build_all_time_leaderboard(current_user: dict[str, Any]) -> list[dict[str, Any]]:
+    entries = [
+        {"rank": 1, "name": "Jordan Lee", "avatar": "JL", "points": 3120, "wins": 8, "color": "#10A861"},
+        {"rank": 2, "name": "Sam Park", "avatar": "SP", "points": 2780, "wins": 7, "color": "#875BF7"},
+        {
+            "rank": 3,
+            "name": current_user["name"],
+            "avatar": "".join(part[0] for part in current_user["name"].split()[:2]).upper(),
+            "points": current_user["points"],
+            "wins": 6,
+            "color": "#2E90FA",
+            "isCurrentUser": True,
+        },
+        {"rank": 4, "name": "Morgan Walsh", "avatar": "MW", "points": 1950, "wins": 5, "color": "#06AED4"},
+        {"rank": 5, "name": "Taylor Kim", "avatar": "TK", "points": 1640, "wins": 4, "color": "#F79009"},
+        {"rank": 6, "name": "Riley Nguyen", "avatar": "RN", "points": 890, "wins": 2, "color": "#EC2222"},
+    ]
+    return entries
+
+
+def _build_past_challenges() -> list[dict[str, Any]]:
+    return [
+        {"id": "p1", "name": "February Freeze", "target": 350, "actual": 312, "reward": 800, "status": "won", "month": "Feb 2026"},
+        {"id": "p2", "name": "Coffee Cap", "target": 60, "actual": 58, "reward": 200, "status": "won", "month": "Feb 2026"},
+        {"id": "p3", "name": "Entertainment Budget", "target": 150, "actual": 183, "reward": 300, "status": "lost", "month": "Jan 2026"},
+    ]
+
+
+def _decorate_challenges(challenges: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    decorated: list[dict[str, Any]] = []
+    for index, challenge in enumerate(challenges):
+        goal = float(challenge.get("goal", 0.0) or 0.0)
+        unit = str(challenge.get("unit", "CAD"))
+        if unit == "CAD":
+            current = round(goal * min(0.35 + index * 0.12, 0.82), 2)
+            reward = max(250, int(round(goal * 2.5)))
+        else:
+            current = min(goal, max(1.0, round(goal * 0.5, 2)))
+            reward = 250 + index * 75
+
+        decorated.append(
+            {
+                **challenge,
+                "joined": challenge.get("joined", index < 2),
+                "progress": challenge.get("progress") or current,
+                "streak": challenge.get("streak") or max(2, 5 - index),
+                "currentSpend": current,
+                "reward": reward,
+            }
+        )
+    return decorated
+
+
+def _build_leaderboard_tip(
+    events: list[dict[str, Any]],
+    active_challenge: dict[str, Any] | None,
+    leaderboard: list[dict[str, Any]],
+) -> str:
+    if not events or not active_challenge or len(leaderboard) < 2:
+        return "Keep your biggest social event in check and you'll stay comfortably under target."
+
+    top_event = max(events, key=lambda event: float(event.get("predictedSpend", 0.0) or 0.0))
+    leader = leaderboard[0]
+    runner_up = leaderboard[1] if len(leaderboard) > 1 else leaderboard[0]
+    gap = abs(float(leader.get("value", 0.0)) - float(runner_up.get("value", 0.0)))
+    return (
+        f"Skipping {top_event.get('title', 'your highest-spend event')} saves about "
+        f"${round(float(top_event.get('predictedSpend', 0.0) or 0.0))} and could close the "
+        f"${round(gap)} gap in {active_challenge.get('name', 'your active challenge')}."
+    )
+
+
+def _build_dashboard_payload(
+    session_id: str,
+    monthly_budget: float,
+    spent_so_far: float,
+) -> dict[str, Any]:
+    orchestrator = _get_orchestrator(session_id)
+    pipeline = orchestrator.run_pipeline(
+        raw_events=_MOCK_CALENDAR_EVENTS,
+        monthly_budget=monthly_budget,
+        spent_so_far=spent_so_far,
+    )
+
+    health_score = _compute_health_score(pipeline["forecast"])
+    spending_history = _build_spending_history(float(pipeline["forecast"]["next7DaysTotal"]))
+    previous_actual = next(
+        (
+            float(item["actual"])
+            for item in reversed(spending_history)
+            if item.get("actual") is not None
+        ),
+        0.0,
+    )
+    health_history = _build_health_score_history(health_score)
+    health_trend = health_score - int(health_history[-2]["score"])
+
+    challenges = _decorate_challenges(pipeline["challenges"].get("list", []))
+    pipeline["challenges"]["list"] = challenges
+
+    current_user_name = _DEMO_PROFILE["name"]
+    for entry in pipeline["challenges"].get("leaderboard", []):
+        if entry.get("name") == "You":
+            entry["name"] = current_user_name
+            entry["isCurrentUser"] = True
+
+    active_challenge = next(
+        (
+            challenge
+            for challenge in challenges
+            if challenge.get("unit") == "CAD"
+        ),
+        challenges[0] if challenges else None,
+    )
+    if active_challenge is not None and "endDate" in active_challenge:
+        active_challenge["deadline"] = active_challenge["endDate"]
+
+    won_challenges = [challenge for challenge in _build_past_challenges() if challenge["status"] == "won"]
+    saved_total = sum(challenge["target"] - challenge["actual"] for challenge in won_challenges)
+
+    return {
+        **pipeline,
+        "healthScore": health_score,
+        "profile": _DEMO_PROFILE,
+        "dashboardStats": {
+            "healthScoreTrend": health_trend,
+            "weekOverWeekDelta": round(float(pipeline["forecast"]["next7DaysTotal"]) - previous_actual),
+            "predictedConfidence": 82,
+            "spendingAccuracy": 85,
+            "challengeWinRate": round(len(won_challenges) / max(len(_build_past_challenges()), 1) * 100),
+            "savingsRate": 68,
+            "totalSaved": saved_total,
+            "challengesWon": len(won_challenges),
+            "totalChallenges": len(_build_past_challenges()),
+        },
+        "spendingHistory": spending_history,
+        "healthScoreHistory": health_history,
+        "pastChallenges": _build_past_challenges(),
+        "friendSuggestions": _FRIEND_SUGGESTIONS,
+        "allTimeLeaderboard": _build_all_time_leaderboard(_DEMO_PROFILE),
+        "leaderboardTip": _build_leaderboard_tip(
+            pipeline["events"],
+            active_challenge,
+            pipeline["challenges"].get("leaderboard", []),
+        ),
+        "activeChallenge": active_challenge,
+        "generatedAt": datetime.utcnow().isoformat() + "Z",
+    }
+
+
+def _fallback_coach_text(orchestrator: Orchestrator, message: str) -> str:
+    forecast = orchestrator.state.forecast
+    events = sorted(
+        orchestrator.state.events,
+        key=lambda event: event.predicted_spend,
+        reverse=True,
+    )
+    lower = message.lower()
+
+    if not forecast or not events:
+        return "I loaded your dashboard context, but I need calendar events before I can give specific advice."
+
+    top_event = events[0]
+    weekend_events = [
+        event for event in events if datetime.fromisoformat(event.start).weekday() >= 5
+    ]
+    health_score = _compute_health_score(forecast.model_dump(by_alias=True))
+
+    if "weekend" in lower:
+        weekend_total = round(sum(event.predicted_spend for event in weekend_events), 2)
+        if weekend_events:
+            return (
+                f"Your weekend is tracking to about ${weekend_total:.0f}, led by "
+                f"{weekend_events[0].title} at roughly ${weekend_events[0].predicted_spend:.0f}. "
+                f"If you trim that one plan, you keep more room inside your ${forecast.monthly_budget:.0f} budget."
+            )
+
+    if "health" in lower or "score" in lower:
+        return (
+            f"Your financial health score is {health_score}/100. "
+            f"You have about ${forecast.remaining_budget:.0f} left this month with "
+            f"{forecast.risk_score.value.lower()} risk, so the main pressure point is "
+            f"{top_event.title} at roughly ${top_event.predicted_spend:.0f}."
+        )
+
+    if "balance" in lower or "budget" in lower or "afford" in lower:
+        return (
+            f"You're forecasting ${forecast.next_7days_total:.0f} over the next 7 days and "
+            f"about ${forecast.remaining_budget:.0f} remains in your monthly budget. "
+            f"The biggest spend trigger is {top_event.title} at roughly ${top_event.predicted_spend:.0f}."
+        )
+
+    return (
+        f"Your week is forecasting ${forecast.next_7days_total:.0f} in spend with "
+        f"{top_event.title} as the biggest trigger at about ${top_event.predicted_spend:.0f}. "
+        f"You still have roughly ${forecast.remaining_budget:.0f} left, so the cleanest move is to cut one social or dining event and lock that amount early."
+    )
 
 
 # ── Health ──────────────────────────────────────────────────────────────────
@@ -345,15 +663,34 @@ def coach_chat(request: CoachChatRequest):
     """
     orchestrator = _get_orchestrator(request.session_id)
 
-    # If events provided and not yet analyzed, run pipeline first
-    if request.events and not orchestrator.state.events:
+    # Auto-bootstrap calendar context on cold sessions so coach replies are event-aware.
+    events_to_use = request.events
+    if not events_to_use and not orchestrator.state.events:
+        events_to_use = _MOCK_CALENDAR_EVENTS
+
+    if events_to_use and not orchestrator.state.events:
         orchestrator.run_pipeline(
-            raw_events=request.events,
+            raw_events=events_to_use,
             monthly_budget=request.monthly_budget,
         )
 
     chat_req = ChatRequest(message=request.message)
-    result = orchestrator.chat(chat_req)
+    try:
+        result = orchestrator.chat(chat_req)
+    except Exception:
+        reply = ChatMessage(
+            id=f"fallback-{request.session_id}-{int(datetime.utcnow().timestamp())}",
+            role="assistant",
+            content=_fallback_coach_text(orchestrator, request.message),
+            timestamp=datetime.utcnow().isoformat() + "Z",
+        )
+        actions = []
+        if orchestrator.state.forecast and orchestrator.state.forecast.recommended_actions:
+            actions = [
+                action.model_dump()
+                for action in orchestrator.state.forecast.recommended_actions
+            ]
+        return {"reply": reply.model_dump(), "actions": actions}
 
     return {
         "reply": result.reply.model_dump(),
@@ -557,6 +894,37 @@ def get_mock_calendar():
     return _MOCK_CALENDAR_EVENTS
 
 
+@app.get("/api/dashboard")
+def dashboard(
+    monthly_budget: float = Query(_DEFAULT_MONTHLY_BUDGET, ge=0),
+    spent_so_far: float = Query(_DEFAULT_SPENT_SO_FAR, ge=0),
+    session_id: str = Query("default"),
+):
+    """Budget-aware dashboard payload for all frontend pages."""
+    return _build_dashboard_payload(
+        session_id=session_id,
+        monthly_budget=monthly_budget,
+        spent_so_far=spent_so_far,
+    )
+
+
+@app.get("/api/dashboard/sankey")
+def dashboard_sankey(
+    monthly_budget: float = Query(_DEFAULT_MONTHLY_BUDGET, ge=0),
+    spent_so_far: float = Query(_DEFAULT_SPENT_SO_FAR, ge=0),
+    session_id: str = Query("default"),
+):
+    """
+    Budget-aware Sankey endpoint built from deterministic pipeline output.
+    """
+    pipeline = _build_dashboard_payload(
+        session_id=session_id,
+        monthly_budget=monthly_budget,
+        spent_so_far=spent_so_far,
+    )
+    return _build_dashboard_sankey(pipeline["forecast"])
+
+
 @app.get("/api/demo/dashboard")
 def demo_dashboard():
     """
@@ -564,11 +932,10 @@ def demo_dashboard():
     pipeline, and returns everything the frontend needs.
     No API key or calendar OAuth required.
     """
-    orchestrator = _get_orchestrator("demo")
-    return orchestrator.run_pipeline(
-        raw_events=_MOCK_CALENDAR_EVENTS,
-        monthly_budget=1800.0,
-        spent_so_far=620.0,
+    return _build_dashboard_payload(
+        session_id="demo",
+        monthly_budget=_DEFAULT_MONTHLY_BUDGET,
+        spent_so_far=_DEFAULT_SPENT_SO_FAR,
     )
 
 
@@ -583,11 +950,10 @@ def demo_dashboard_ai():
 
     from google import genai as genai_client
 
-    orchestrator = _get_orchestrator("demo-ai")
-    pipeline = orchestrator.run_pipeline(
-        raw_events=_MOCK_CALENDAR_EVENTS,
-        monthly_budget=1800.0,
-        spent_so_far=620.0,
+    pipeline = _build_dashboard_payload(
+        session_id="demo-ai",
+        monthly_budget=_DEFAULT_MONTHLY_BUDGET,
+        spent_so_far=_DEFAULT_SPENT_SO_FAR,
     )
 
     # Build a concise prompt with the pipeline data

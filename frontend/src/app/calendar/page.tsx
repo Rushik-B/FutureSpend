@@ -23,8 +23,8 @@ import {
 import { cva } from "class-variance-authority";
 import { PageShell } from "@/components/layout/PageShell";
 import { api } from "@/lib/api";
+import { getStoredMonthlyBudget } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
-import eventsData from "@/mocks/events.json";
 
 /* ─── Types ─── */
 
@@ -43,7 +43,7 @@ interface CalendarEvent {
 /* ─── Constants ─── */
 
 const HOUR_HEIGHT = 64; // px per hour slot
-const VISIBLE_HOURS = { from: 7, to: 21 }; // 7am–9pm
+const VISIBLE_HOURS = { from: 0, to: 24 }; // full day
 const HOURS = Array.from(
   { length: VISIBLE_HOURS.to - VISIBLE_HOURS.from },
   (_, i) => i + VISIBLE_HOURS.from
@@ -161,7 +161,7 @@ function formatHour(hour: number): string {
 
 /* ─── Timeline indicator (from big-calendar) ─── */
 
-function TimelineIndicator() {
+function TimelineIndicator({ headerHeight }: { headerHeight: number }) {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -169,21 +169,21 @@ function TimelineIndicator() {
     return () => clearInterval(timer);
   }, []);
 
-  const hour = now.getHours();
-  if (hour < VISIBLE_HOURS.from || hour >= VISIBLE_HOURS.to) return null;
-
-  const minutes = hour * 60 + now.getMinutes();
+  const minutes = now.getHours() * 60 + now.getMinutes();
   const visibleStart = VISIBLE_HOURS.from * 60;
-  const top = ((minutes - visibleStart) / 60) * HOUR_HEIGHT;
+  const visibleEnd = VISIBLE_HOURS.to * 60;
+  if (minutes < visibleStart || minutes >= visibleEnd) return null;
+
+  const top = headerHeight + ((minutes - visibleStart) / 60) * HOUR_HEIGHT;
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 z-30"
-      style={{ top: `${top}px` }}
+      className="pointer-events-none absolute z-30"
+      style={{ top: `${top}px`, left: "56px", right: 0 }}
     >
       <div className="relative flex items-center">
-        <div className="absolute -left-1.5 h-3 w-3 rounded-full bg-accent-blue" />
-        <div className="w-full border-t border-accent-blue" />
+        <div className="absolute -left-1.5 h-3 w-3 rounded-full bg-red-500" />
+        <div className="w-full border-t border-red-500" />
       </div>
     </div>
   );
@@ -192,11 +192,9 @@ function TimelineIndicator() {
 /* ─── Main component ─── */
 
 export default function CalendarPage() {
-  const [rawEvents, setRawEvents] = useState<CalendarEvent[]>(
-    eventsData as CalendarEvent[]
-  );
+  const [rawEvents, setRawEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(!!process.env.NEXT_PUBLIC_API_URL);
-  const [selectedDate, setSelectedDate] = useState(new Date(2025, 2, 3)); // March 3, 2025 to match mock data
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
     null
   );
@@ -207,40 +205,54 @@ export default function CalendarPage() {
     "health",
   ]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const theadRef = useRef<HTMLTableSectionElement>(null);
+  const [theadHeight, setTheadHeight] = useState(0);
+
+  // Measure thead height so the time indicator aligns with the grid
+  useEffect(() => {
+    if (theadRef.current) {
+      setTheadHeight(theadRef.current.offsetHeight);
+    }
+  }, []);
 
   // Fetch events from API if available
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_API_URL) {
-      setLoading(false);
-      return;
-    }
+    let cancelled = false;
+
     api
-      .getDashboard()
+      .getDashboard({ monthlyBudget: getStoredMonthlyBudget() })
       .then((data) => {
+        if (cancelled) return;
         if (data.events?.length) {
-          setRawEvents(
-            data.events.map((e: Record<string, unknown>) => ({
-              id: e.id as string,
-              title: e.title as string,
-              start: e.start as string,
-              end: (e.end as string) ?? (e.start as string),
-              calendarType:
-                (e.calendarType as CalendarType) ?? "personal",
-              predictedSpend: (e.predictedSpend as number) ?? 0,
-              category: (e.category as string) ?? "other",
-            }))
-          );
+          const events = data.events.map((event) => ({
+            id: event.id,
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            calendarType: event.calendarType,
+            predictedSpend: event.predictedSpend ?? 0,
+            category: event.category ?? "other",
+          }));
+          setRawEvents(events);
+          setSelectedDate(parseISO(events[0].start));
         }
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Auto-scroll to ~8am on mount
+  // Auto-scroll to 7am on mount (full 24h grid starts at midnight)
   useEffect(() => {
     if (scrollRef.current) {
-      const offset = (8 - VISIBLE_HOURS.from) * HOUR_HEIGHT;
-      scrollRef.current.scrollTop = offset;
+      scrollRef.current.scrollTop = 7 * HOUR_HEIGHT;
     }
   }, []);
 
@@ -391,12 +403,12 @@ export default function CalendarPage() {
             {/* Single scroll container — header is sticky so columns always align */}
             <div
               ref={scrollRef}
-              className="flex-1 overflow-y-auto"
+              className="relative flex-1 overflow-y-auto"
               style={{ maxHeight: "calc(100vh - 280px)" }}
             >
               <table className="w-full border-collapse" style={{ minWidth: 700 }}>
                 {/* Sticky day headers */}
-                <thead>
+                <thead ref={theadRef}>
                   <tr className="sticky top-0 z-20 bg-surface-1">
                     <th
                       className="w-14 min-w-[56px] border-b border-white/[0.06]"
@@ -541,10 +553,8 @@ export default function CalendarPage() {
                 </tbody>
               </table>
 
-              {/* Current time indicator spans across the day columns area */}
-              <div className="pointer-events-none absolute inset-0" style={{ marginLeft: 56 }}>
-                <TimelineIndicator />
-              </div>
+              {/* Current time indicator — positioned relative to scroll container */}
+              <TimelineIndicator headerHeight={theadHeight} />
             </div>
           </div>
 
