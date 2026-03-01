@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { type CSSProperties, useState, useEffect, useCallback } from "react";
 import {
   CreditCard,
   Lock,
@@ -27,6 +27,7 @@ import {
 } from "recharts";
 import { PageShell } from "@/components/layout/PageShell";
 import { api } from "@/lib/api";
+import { getDashboardTypographyVars } from "@/lib/typography";
 import bankDataJson from "@/mocks/banking.json";
 
 const categoryIcons: Record<string, string> = {
@@ -158,7 +159,10 @@ export default function BankingPage() {
 
   return (
     <PageShell>
-      <div className="p-4 lg:p-6 space-y-4">
+      <div
+        className="p-4 lg:p-6 space-y-4 dashboard-typography"
+        style={getDashboardTypographyVars() as CSSProperties}
+      >
         {/* Header */}
         <div className="flex items-center justify-between animate-fade-up">
           <div className="flex items-center gap-3">

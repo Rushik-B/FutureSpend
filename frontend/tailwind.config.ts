@@ -13,7 +13,7 @@ const config: Config = {
         /* ── Surface system (layered dark backgrounds) ── */
         surface: {
           0: "#09090b",
-          1: "#0f0f12",
+          1: "#141418",
           2: "#161619",
           3: "#1c1c20",
           4: "#222226",
@@ -98,7 +98,7 @@ const config: Config = {
 
         app: {
           bg: "#09090b",
-          surface: "#0f0f12",
+          surface: "#141418",
           sidebar: "#09090b",
         },
       },

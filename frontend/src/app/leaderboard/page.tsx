@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { type CSSProperties, useState, useEffect } from "react";
 import {
   Trophy,
   TrendUp,
@@ -25,6 +25,7 @@ import {
 } from "recharts";
 import { PageShell } from "@/components/layout/PageShell";
 import { api } from "@/lib/api";
+import { getDashboardTypographyVars } from "@/lib/typography";
 
 const COLORS = [
   "#10A861",
@@ -251,7 +252,10 @@ export default function LeaderboardPage() {
 
   return (
     <PageShell>
-      <div className="p-6 lg:p-8 space-y-6">
+      <div
+        className="p-6 lg:p-8 space-y-6 dashboard-typography"
+        style={getDashboardTypographyVars() as CSSProperties}
+      >
         {/* Hero Banner */}
         <div className="relative overflow-hidden bg-gradient-to-br from-accent-blue/10 to-surface-1 border border-white/[0.06] rounded-xl p-6 animate-fade-up">
           <div className="relative">

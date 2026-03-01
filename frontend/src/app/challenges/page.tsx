@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { type CSSProperties, useState, useEffect } from "react";
 import {
   Trophy,
   Star,
@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import { PageShell } from "@/components/layout/PageShell";
 import { api } from "@/lib/api";
+import { getDashboardTypographyVars } from "@/lib/typography";
 import challengesData from "@/mocks/challenges.json";
 
 function ProgressRing({
@@ -143,7 +144,10 @@ export default function ChallengesPage() {
 
   return (
     <PageShell>
-      <div className="p-6 lg:p-8 space-y-6">
+      <div
+        className="p-6 lg:p-8 space-y-6 dashboard-typography"
+        style={getDashboardTypographyVars() as CSSProperties}
+      >
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4 animate-fade-up">
           <div className="flex items-center gap-3">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AreaChart,
@@ -23,6 +23,7 @@ import {
 } from "@phosphor-icons/react";
 import { PageShell } from "@/components/layout/PageShell";
 import { api } from "@/lib/api";
+import { getDashboardTypographyVars } from "@/lib/typography";
 import forecastData from "@/mocks/forecast.json";
 
 const currentUser = {
@@ -125,7 +126,10 @@ export default function DashboardPage() {
 
   return (
     <PageShell>
-      <div className="p-6 lg:p-8 space-y-7">
+      <div
+        className="p-6 lg:p-8 space-y-7 dashboard-typography"
+        style={getDashboardTypographyVars() as CSSProperties}
+      >
         {/* Greeting */}
         <div className="flex items-center justify-between flex-wrap gap-4 animate-fade-up">
           <div>

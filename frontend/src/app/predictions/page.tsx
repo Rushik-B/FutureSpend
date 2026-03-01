@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { type CSSProperties, useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -23,6 +23,7 @@ import {
 import Link from "next/link";
 import { PageShell } from "@/components/layout/PageShell";
 import { api } from "@/lib/api";
+import { getDashboardTypographyVars } from "@/lib/typography";
 import eventsData from "@/mocks/events.json";
 import predictionsData from "@/mocks/predictions.json";
 
@@ -231,7 +232,10 @@ export default function PredictionsPage() {
 
   return (
     <PageShell>
-      <div className="p-6 lg:p-8 space-y-6">
+      <div
+        className="p-6 lg:p-8 space-y-6 dashboard-typography"
+        style={getDashboardTypographyVars() as CSSProperties}
+      >
         {/* Top Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 animate-fade-up">
           {/* AI Prediction */}

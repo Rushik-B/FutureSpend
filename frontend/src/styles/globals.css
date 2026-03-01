@@ -57,6 +57,75 @@
   --font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   --font-sure-sans: 'Geist', 'Inter', system-ui, -apple-system, sans-serif;
   --font-sure-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Sure-style semantic tokens used by the AI sidebar */
+  --sure-bg-surface: #0b0b0b;
+  --sure-bg-container: #171717;
+  --sure-bg-surface-inset: #242424;
+  --sure-bg-container-inset: #242424;
+  --sure-text-primary: #ffffff;
+  --sure-text-secondary: #cfcfcf;
+  --sure-text-subdued: #9e9e9e;
+  --sure-border-primary: rgba(255, 255, 255, 0.2);
+  --sure-border-secondary: rgba(255, 255, 255, 0.15);
+  --sure-border-tertiary: rgba(255, 255, 255, 0.1);
+  --sure-shadow-xs:
+    0px 1px 2px 0px rgba(255, 255, 255, 0.08),
+    0px 0px 0px 1px rgba(255, 255, 255, 0.05);
+}
+
+@layer utilities {
+  .text-primary {
+    color: var(--sure-text-primary);
+  }
+
+  .text-secondary {
+    color: var(--sure-text-secondary);
+  }
+
+  .text-subdued {
+    color: var(--sure-text-subdued);
+  }
+
+  .bg-surface {
+    background-color: var(--sure-bg-surface);
+  }
+
+  .bg-container {
+    background-color: var(--sure-bg-container);
+  }
+
+  .bg-surface-inset {
+    background-color: var(--sure-bg-surface-inset);
+  }
+
+  .bg-container-inset {
+    background-color: var(--sure-bg-container-inset);
+  }
+
+  .bg-inverse {
+    background-color: #fff;
+  }
+
+  .text-inverse {
+    color: #0b0b0b;
+  }
+
+  .border-primary {
+    border-color: var(--sure-border-primary);
+  }
+
+  .border-secondary {
+    border-color: var(--sure-border-secondary);
+  }
+
+  .border-tertiary {
+    border-color: var(--sure-border-tertiary);
+  }
+
+  .shadow-border-xs {
+    box-shadow: var(--sure-shadow-xs);
+  }
 }
 
 html {
@@ -76,6 +145,23 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.011em;
+}
+
+/* Scoped app font-weight overrides (dashboard, predictions, challenges, leaderboard, banking) – see lib/typography */
+.dashboard-typography .font-normal {
+  font-weight: var(--dashboard-weight-normal, 400);
+}
+
+.dashboard-typography .font-medium {
+  font-weight: var(--dashboard-weight-medium, 500);
+}
+
+.dashboard-typography .font-semibold {
+  font-weight: var(--dashboard-weight-semibold, 600);
+}
+
+.dashboard-typography .font-bold {
+  font-weight: var(--dashboard-weight-bold, 700);
 }
 
 /* ── Card system ── */
