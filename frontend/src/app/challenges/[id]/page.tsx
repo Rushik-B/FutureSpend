@@ -3,11 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
-/** Pre-render these challenge ids for static export (e.g. GitHub Pages). */
-export function generateStaticParams() {
-  return [{ id: "1" }, { id: "2" }, { id: "3" }];
-}
 import { ArrowLeft, Fire, Star, Trophy } from "@phosphor-icons/react";
 import { PageShell } from "@/components/layout/PageShell";
 import { BadgesGrid } from "@/components/challenges/BadgesGrid";
