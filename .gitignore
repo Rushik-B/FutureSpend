@@ -1,6 +1,9 @@
 # GitHub Pages / deploy output
 florykhan.github.io
 
+# Deployment notes (local only)
+DEPLOYMENT.md
+
 # Website features folder
 Website features overview/
 __pycache__/
