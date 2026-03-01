@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Settings } from "lucide-react";
+import { Bell, GearSix } from "@phosphor-icons/react";
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -58,7 +58,7 @@ export function AppTopBar() {
           className="relative w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center hover:bg-white/[0.08] transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400"
           aria-label="View notifications"
         >
-          <Bell className="w-3.5 h-3.5 text-zinc-500" aria-hidden="true" />
+          <Bell size={16} weight="bold" className="text-zinc-500" aria-hidden="true" />
           <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" aria-hidden="true" />
         </button>
         <Link
@@ -66,7 +66,7 @@ export function AppTopBar() {
           className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center hover:bg-white/[0.08] transition-colors focus-visible:ring-2 focus-visible:ring-zinc-400"
           aria-label="Settings"
         >
-          <Settings className="w-3.5 h-3.5 text-zinc-500" aria-hidden="true" />
+          <GearSix size={16} weight="bold" className="text-zinc-500" aria-hidden="true" />
         </Link>
       </div>
     </header>

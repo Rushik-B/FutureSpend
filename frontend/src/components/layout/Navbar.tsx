@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Zap } from "lucide-react";
+import { Lightning } from "@phosphor-icons/react";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +25,7 @@ export function Navbar() {
           className="flex shrink-0 items-center gap-3 font-semibold"
         >
           <div className="flex-shrink-0 w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
+            <Lightning size={18} weight="fill" className="text-white" />
           </div>
           <div>
             <p className={cn("text-sm", isHome ? "text-primary-400" : "text-slate-900")} style={{ lineHeight: "1.2" }}>

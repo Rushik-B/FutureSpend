@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingUp, Wallet, AlertTriangle } from "lucide-react";
+import { TrendUp, Wallet, Warning } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { formatCurrency } from "@/lib/format";
 import { RISK_COLORS } from "@/lib/constants";
@@ -26,7 +26,7 @@ export function SummaryCards({
       <Card className="border-l-4 border-l-primary-500">
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-primary-50 p-2">
-            <TrendingUp className="h-5 w-5 text-primary-600" />
+            <TrendUp size={22} weight="bold" className="text-primary-600" />
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -39,7 +39,7 @@ export function SummaryCards({
       <Card className="border-l-4 border-l-emerald-500">
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-emerald-50 p-2">
-            <Wallet className="h-5 w-5 text-emerald-600" />
+            <Wallet size={22} weight="fill" className="text-emerald-600" />
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -52,7 +52,7 @@ export function SummaryCards({
       <Card>
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-slate-100 p-2">
-            <Wallet className="h-5 w-5 text-slate-600" />
+            <Wallet size={22} weight="duotone" className="text-slate-600" />
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -68,7 +68,7 @@ export function SummaryCards({
             className="rounded-lg p-2"
             style={{ backgroundColor: `${riskColor}20` }}
           >
-            <AlertTriangle className="h-5 w-5" style={{ color: riskColor }} />
+            <Warning size={22} weight="fill" style={{ color: riskColor }} />
           </div>
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">

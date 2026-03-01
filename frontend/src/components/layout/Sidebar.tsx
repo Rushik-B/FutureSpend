@@ -3,22 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Calendar,
+  SquaresFour,
+  CalendarBlank,
   Trophy,
-  MessageCircle,
-  Settings,
-  Home,
-} from "lucide-react";
+  ChatCircle,
+  GearSix,
+  House,
+} from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
+  { href: "/", label: "Home", icon: House },
+  { href: "/dashboard", label: "Dashboard", icon: SquaresFour },
+  { href: "/calendar", label: "Calendar", icon: CalendarBlank },
   { href: "/challenges", label: "Challenges", icon: Trophy },
-  { href: "/coach", label: "AI Coach", icon: MessageCircle },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/coach", label: "AI Coach", icon: ChatCircle },
+  { href: "/settings", label: "Settings", icon: GearSix },
 ];
 
 export function Sidebar() {
@@ -40,7 +40,7 @@ export function Sidebar() {
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               )}
             >
-              <Icon className="h-5 w-5" />
+              <Icon size={20} weight="bold" />
               {label}
             </Link>
           );

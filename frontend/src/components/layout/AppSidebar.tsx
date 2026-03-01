@@ -19,15 +19,15 @@ import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/calendar", icon: Calendar, label: "Calendar" },
-  { href: "/predictions", icon: TrendingUp, label: "Predictions" },
+  { href: "/", icon: House, label: "Home" },
+  { href: "/dashboard", icon: SquaresFour, label: "Dashboard" },
+  { href: "/calendar", icon: CalendarBlank, label: "Calendar" },
+  { href: "/predictions", icon: TrendUp, label: "Predictions" },
   { href: "/challenges", icon: Trophy, label: "Challenges" },
   { href: "/leaderboard", icon: Medal, label: "Leaderboard" },
-  { href: "/banking", icon: Landmark, label: "Banking" },
-  { href: "/coach", icon: MessageCircle, label: "AI Coach" },
-  { href: "/settings", icon: Settings, label: "Settings" },
+  { href: "/banking", icon: Bank, label: "Banking" },
+  { href: "/coach", icon: ChatCircle, label: "AI Coach" },
+  { href: "/settings", icon: GearSix, label: "Settings" },
 ];
 
 interface AppSidebarProps {
@@ -77,7 +77,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
               )}
               title={collapsed ? label : undefined}
             >
-              <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.8} aria-hidden="true" />
+              <Icon size={18} weight="bold" className="flex-shrink-0" aria-hidden="true" />
               {!collapsed && <span className="truncate">{label}</span>}
             </Link>
           );
@@ -92,9 +92,9 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? (
-          <ChevronRight className="w-3 h-3" aria-hidden="true" />
+          <CaretRight size={14} weight="bold" aria-hidden="true" />
         ) : (
-          <ChevronLeft className="w-3 h-3" aria-hidden="true" />
+          <CaretLeft size={14} weight="bold" aria-hidden="true" />
         )}
       </button>
     </aside>
