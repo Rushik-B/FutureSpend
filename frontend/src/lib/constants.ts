@@ -1,5 +1,5 @@
 export const APP_NAME = "FutureSpend";
-export const TAGLINE = "See Tomorrow, Save Today, Share Success";
+export const TAGLINE = "Predict Tomorrow's Spending Today";
 
 export const NAV_LINKS = [
   { href: "/", label: "Home" },

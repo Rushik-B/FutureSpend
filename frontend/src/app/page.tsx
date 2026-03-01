@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Calendar, Upload, ArrowRight, CheckCircle2 } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
 import { ScrollArrow } from "@/components/landing/ScrollArrow";
-import { TAGLINE } from "@/lib/constants";
+import { HeroLockup } from "@/components/landing/HeroLockup";
+import { APP_NAME, TAGLINE } from "@/lib/constants";
 
 const STEPS = [
   {
@@ -68,12 +69,36 @@ export default function HomePage() {
           <section className="relative flex min-h-[calc(100vh-3.5rem)] w-full items-center justify-center px-5 py-24 text-center sm:px-8">
             <ScrollArrow targetId="steps" />
             <div className="flex max-w-3xl flex-col items-center">
-              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl md:leading-[1.15] md:tracking-[-0.02em]">
-                <span className="gradient-text-animate inline-block [filter:drop-shadow(0_2px_24px_rgba(0,0,0,0.4))_drop-shadow(0_0_1px_rgba(255,255,255,0.15))]">
-                  {TAGLINE}
-                </span>
-              </h1>
-              <p className="mt-7 max-w-xl text-lg leading-[1.7] text-slate-200/95 sm:text-xl [text-shadow:0_1px_12px_rgba(0,0,0,0.3)]">
+              {/* Logo-style lockup: animation plays once per session, then final state */}
+              <HeroLockup>
+                <div className="hero-box-bg" aria-hidden />
+                <svg
+                  className="hero-box-svg"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                  aria-hidden
+                >
+                  <path
+                    className="hero-box-path"
+                    d="M 12,0 L 88,0 A 12,12 0 0 1 100,12 L 100,88 A 12,12 0 0 1 88,100 L 12,100 A 12,12 0 0 1 0,88 L 0,12 A 12,12 0 0 1 12,0 Z"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeWidth="0.8"
+                  />
+                </svg>
+                <h1 className="relative z-10 flex flex-col items-center gap-2 text-center sm:gap-3">
+                  <span
+                    className="gradient-text-animate block font-extrabold leading-[1.05] tracking-[-0.03em] [filter:drop-shadow(0_2px_20px_rgba(0,0,0,0.5))_drop-shadow(0_0_1px_rgba(255,255,255,0.2))]"
+                    style={{ fontSize: "clamp(2.5rem, 10vw + 1.5rem, 5rem)" }}
+                  >
+                    {APP_NAME}
+                  </span>
+                  <span className="text-sm font-medium uppercase tracking-[0.2em] text-white/70 sm:text-base sm:tracking-[0.3em]">
+                    {TAGLINE}
+                  </span>
+                </h1>
+              </HeroLockup>
+              <p className="mt-10 max-w-xl text-lg leading-[1.7] text-slate-200/95 sm:mt-12 sm:text-xl [text-shadow:0_1px_12px_rgba(0,0,0,0.3)]">
                 Turn your calendar into a spending forecast. Get insights, stay on budget, and win
                 challenges with friends.
               </p>
@@ -93,9 +118,6 @@ export default function HomePage() {
                   Upload Transactions CSV (mock)
                 </Link>
               </div>
-              <p className="mt-8 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-xs font-medium tracking-wide text-slate-400 backdrop-blur-sm">
-                Demo mode — data is mocked. Connect real sources in production.
-              </p>
             </div>
           </section>
 

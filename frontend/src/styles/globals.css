@@ -75,3 +75,70 @@ body {
     background-position: 0% center;
   }
 }
+
+/* Hero lockup box: single continuous line draws around the frame */
+.hero-lockup-box {
+  --box-duration: 4s;
+  --box-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --box-path-length: 380;
+  transform-origin: center center;
+  animation: hero-lockup-grow 0.5s ease-out forwards;
+  animation-delay: var(--box-duration);
+}
+@keyframes hero-lockup-grow {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.03);
+  }
+}
+.hero-box-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12%;
+  background: rgba(8, 12, 28, 0.95);
+  pointer-events: none;
+  opacity: 0;
+  animation: hero-box-bg-in 0.5s ease-out forwards;
+  animation-delay: var(--box-duration);
+}
+@keyframes hero-box-bg-in {
+  to {
+    opacity: 1;
+  }
+}
+.hero-box-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.hero-box-path {
+  stroke-dasharray: var(--box-path-length);
+  stroke-dashoffset: var(--box-path-length);
+  animation: hero-box-draw var(--box-duration) var(--box-ease) forwards;
+}
+@keyframes hero-box-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Already-seen state: show final frame with no animation (same session) */
+.hero-lockup-seen {
+  animation: none;
+  transform: scale(1.03);
+}
+.hero-lockup-seen .hero-box-path {
+  animation: none;
+  stroke-dashoffset: 0;
+}
+.hero-lockup-seen .hero-box-bg {
+  animation: none;
+  animation-delay: 0s;
+  opacity: 1;
+}
