@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Repo name as basePath for project pages: https://<user>.github.io/<repo>/
-      NEXT_PUBLIC_BASE_PATH: /mountain-madness-hackathon
+      NEXT_PUBLIC_BASE_PATH: /FutureSpend
       # Set in repo Settings → Secrets and variables → Actions (variable: NEXT_PUBLIC_API_URL)
       NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
     steps:

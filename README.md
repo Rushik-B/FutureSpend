@@ -18,3 +18,5 @@
    ```
 
 With `NEXT_PUBLIC_API_URL` set, the frontend uses the backend for dashboard data, calendar events, predictions, challenges, banking (balance/vault lock-unlock), AI coach chat, and leaderboard. Without it, the app runs with mock data only.
+
+**Live:** [Backend API](https://futurespend.onrender.com)
