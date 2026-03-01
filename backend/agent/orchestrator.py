@@ -30,6 +30,7 @@ from .tools import (
     generate_challenge_from_insights,
     generate_forecast,
     generate_insights,
+    lookup_merchant_spend,
 )
 
 log = logging.getLogger("futurespend.orchestrator")
@@ -39,33 +40,35 @@ MAX_RETRIES_PER_TOOL = 2
 MODEL = "gemini-3-flash-preview"
 
 SYSTEM_PROMPT = """\
-You are FutureSpend — an intelligent financial co-pilot that transforms \
-calendar chaos into money clarity.
+You are FutureSpend — a sharp financial co-pilot that turns calendar events \
+into money clarity. You talk like a smart friend who happens to be great with \
+money, not a bank chatbot.
 
-You have access to the user's upcoming Google Calendar events and their \
-financial context. Your job is to:
+TOOLS AVAILABLE:
+- analyze_calendar_events: enriches raw calendar events with spend predictions \
+  (bank-history-backed where possible)
+- generate_forecast: builds the 7-day financial picture with observations, \
+  risk score, and daily breakdown
+- lookup_merchant_spend: checks the user's REAL bank history for a merchant \
+  (Starbucks, Uber, The Keg, etc.) — use this when asked about a specific place \
+  or to validate a prediction
+- create_vault_command: locks/unlocks money in a savings vault
+- generate_challenges: creates gamified savings challenges from event patterns
 
-1. ANALYZE their calendar to predict spending triggers (meals out, transport, \
-   social events, entertainment).
-2. FORECAST their 7-day burn rate broken down by category.
-3. GENERATE actionable insights — not generic advice, but pattern-specific \
-   observations tied to THEIR events.
-4. RECOMMEND concrete actions: lock funds in vaults, skip specific events, \
-   cook instead of eating out, etc.
-5. GAMIFY savings by creating or suggesting challenges based on detected patterns.
+HOW TO USE THEM:
+- Pick whichever tools make sense for what the user is asking. No rigid order.
+- For a full picture: analyze events → generate forecast → optionally generate challenges.
+- For a specific merchant question: call lookup_merchant_spend directly.
+- For vault protection: call create_vault_command with a concrete amount.
+- Chain tools when it makes the answer better. Skip them when they're not needed.
 
-RULES:
-- Always call analyze_calendar_events FIRST when you receive raw event data.
-- After analyzing, call generate_forecast to build the financial picture.
-- Then call generate_insights to surface patterns.
-- Use create_vault_command when the user wants to protect money proactively.
-- Use generate_challenges to create social saving challenges.
-- Be direct, specific, and reference actual event names and dollar amounts.
-- Never give vague "consider reducing spending" advice — tie everything to \
-  specific calendar events.
-- Respond in a friendly but sharp tone. You're a smart friend who's great \
-  with money, not a boring bank chatbot.
-- If a tool call fails, explain what went wrong and try to recover.
+STYLE RULES:
+- Reference ACTUAL event names and REAL dollar amounts — never give vague advice.
+- "Your Keg dinner on Thursday will cost ~$88 based on your last 2 visits" beats \
+  "consider reducing dining spend."
+- Be direct and specific. One sharp sentence beats three hedge-filled paragraphs.
+- If spend data comes from bank history, say so. If it's estimated, say that too.
+- Propose vault locks with real numbers when spending risk is high.
 
 CONTEXT:
 - Currency: CAD
@@ -165,9 +168,9 @@ class SessionState:
 TOOL_REGISTRY: dict[str, tuple[str, ...]] = {
     "analyze_calendar_events": (),
     "generate_forecast": ("events",),
-    "generate_insights": ("events", "forecast"),
+    "lookup_merchant_spend": (),
     "create_vault_command": (),
-    "generate_challenges": ("insights",),
+    "generate_challenges": ("events",),
 }
 
 
@@ -237,8 +240,7 @@ class Orchestrator:
             missing.append("events (call analyze_calendar_events first)")
         if "forecast" in required and not self._state.forecast:
             missing.append("forecast (call generate_forecast first)")
-        if "insights" in required and not self._state.insights:
-            missing.append("insights (call generate_insights first)")
+        # "insights" precondition removed — challenges now work from events directly
         if missing:
             return f"Missing preconditions: {', '.join(missing)}"
         return None
@@ -308,14 +310,10 @@ class Orchestrator:
                 default=str,
             )
 
-        if name == "generate_insights":
-            self._state.insights = generate_insights(
-                self._state.events, self._state.forecast
-            )
-            return json.dumps(
-                [i.model_dump() for i in self._state.insights],
-                default=str,
-            )
+        if name == "lookup_merchant_spend":
+            merchant = args.get("merchant_name", "")
+            result = lookup_merchant_spend(merchant)
+            return json.dumps(result.model_dump(by_alias=True), default=str)
 
         if name == "create_vault_command":
             cmd = create_vault_command(
@@ -330,7 +328,7 @@ class Orchestrator:
         if name == "generate_challenges":
             user_name = args.get("user_name", "You")
             self._state.challenges = generate_challenge_from_insights(
-                self._state.insights, user_name
+                self._state.events, user_name
             )
             return json.dumps(
                 self._state.challenges.model_dump(by_alias=True),
@@ -422,11 +420,13 @@ class Orchestrator:
         self._state.forecast = generate_forecast(
             self._state.events, monthly_budget, spent_so_far
         )
+        # generate_insights is kept as an internal helper for backwards compat
+        # (the LLM can no longer call it — it's removed from TOOL_DEFINITIONS)
         self._state.insights = generate_insights(
             self._state.events, self._state.forecast
         )
         self._state.challenges = generate_challenge_from_insights(
-            self._state.insights
+            self._state.events
         )
 
         return {

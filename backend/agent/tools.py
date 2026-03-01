@@ -31,11 +31,17 @@ from .schemas import (
     Insight,
     InsightType,
     LeaderboardEntry,
+    MerchantLookupResponse,
     RecommendedAction,
     RiskLevel,
     VaultAction,
     VaultCommand,
 )
+
+try:
+    from mock_bank import get_merchant_average as _get_merchant_average
+except ImportError:
+    _get_merchant_average = None  # type: ignore
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -81,8 +87,10 @@ def _classify_calendar_type(title: str) -> CalendarType:
     return CalendarType.PERSONAL
 
 
-def _explain_prediction(title: str, category: str, amount: float) -> str:
+def _explain_prediction(title: str, category: str, amount: float, source: str = "heuristic") -> str:
     """Generate a human-readable 'why' explanation for a spend prediction."""
+    if source == "bank":
+        return f"Bank history avg → ${amount:.2f}"
     keywords = []
     for pattern, label in [
         (_MEAL_RE, "meal/dining"),
@@ -95,7 +103,7 @@ def _explain_prediction(title: str, category: str, amount: float) -> str:
         if pattern.search(title):
             keywords.append(label)
     if not keywords:
-        return f"General event → default estimate ${amount:.0f}"
+        return f"General event → estimate ${amount:.0f}"
     return f"Keywords: {', '.join(keywords)} → {category} ${amount:.0f}"
 
 
@@ -118,7 +126,26 @@ def _estimate_event_spend(
     start: str,
     attendees: int = 1,
     has_location: bool = False,
-) -> float:
+    location: str = "",
+) -> tuple[float, str]:
+    """Estimate spend for a calendar event.
+
+    Checks bank transaction history first (exact/substring merchant match).
+    Falls back to heuristics when no bank data is available.
+    Returns (amount, source) where source is 'bank' or 'heuristic'.
+    """
+    # --- Bank-history lookup (data-driven) ---
+    if _get_merchant_average is not None:
+        for term in [location, title]:
+            if not term:
+                continue
+            result = _get_merchant_average(term)
+            if result["confidence"] >= 0.5:
+                # Bank transaction = actual amount paid per visit (full bill, not per-person).
+                # Return as-is — the historical average already captures real spend.
+                return round(result["average_spend"], 2), "bank"
+
+    # --- Heuristic fallback ---
     dt = _parse_dt(start)
     hour = dt.hour
     is_weekend = dt.weekday() >= 5
@@ -150,7 +177,7 @@ def _estimate_event_spend(
     if has_location:
         base *= 1.05  # venue bias
 
-    return round(base, 2)
+    return round(base, 2), "heuristic"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -191,10 +218,10 @@ def analyze_calendar_events(
         else:
             cal_type = _classify_calendar_type(title)
 
-        spend = _estimate_event_spend(
-            title, category, start, attendees, bool(location)
+        spend, spend_source = _estimate_event_spend(
+            title, category, start, attendees, bool(location), location
         )
-        why = _explain_prediction(title, category, spend)
+        why = _explain_prediction(title, category, spend, spend_source)
         event_id = ev.get("id", _stable_id("evt", f"{title}{start}"))
 
         results.append(
@@ -286,6 +313,7 @@ def generate_forecast(
     ]
 
     actions = _generate_recommended_actions(events, total_predicted, monthly_budget)
+    observations = _generate_observations(events, total_predicted, risk, monthly_budget)
 
     return ForecastResponse(
         next7DaysTotal=round(total_predicted, 2),
@@ -295,6 +323,7 @@ def generate_forecast(
         daily=daily_forecasts,
         byCategory=by_category,
         recommendedActions=actions,
+        observations=observations,
     )
 
 
@@ -339,6 +368,68 @@ def _generate_recommended_actions(
         ))
 
     return actions
+
+
+def _generate_observations(
+    events: list[CalendarEvent],
+    total_predicted: float,
+    risk: RiskLevel,
+    monthly_budget: float,
+) -> list[str]:
+    """
+    Produce terse, data-specific observation strings to embed in the forecast.
+    These replace the old standalone generate_insights tool.
+    """
+    obs: list[str] = []
+
+    transport = [e for e in events if e.category == "transport"]
+    if len(transport) >= 2:
+        total = sum(e.predicted_spend for e in transport)
+        obs.append(
+            f"Ride-share: {len(transport)} trips this week → ~${total:.0f} CAD. "
+            f"That's ~${total * 4:.0f}/month if this keeps up."
+        )
+
+    coffees = [e for e in events if _COFFEE_RE.search(e.title)]
+    if len(coffees) >= 2:
+        weekly = sum(e.predicted_spend for e in coffees)
+        obs.append(
+            f"Coffee habit: {len(coffees)} café runs → ~${weekly:.0f} this week "
+            f"(~${weekly * 4:.0f}/month). Cutting to 1/day saves ~${weekly * 0.5:.0f}."
+        )
+
+    social = [e for e in events if e.calendar_type == CalendarType.SOCIAL]
+    if social:
+        total_s = sum(e.predicted_spend for e in social)
+        top = sorted(social, key=lambda x: -x.predicted_spend)[:2]
+        names = ", ".join(e.title for e in top)
+        obs.append(
+            f"{len(social)} social events driving ~${total_s:.0f} in predicted spend. "
+            f"Biggest triggers: {names}."
+        )
+
+    weekend_food = [
+        e for e in events
+        if e.category == "food" and _parse_dt(e.start).weekday() >= 5
+    ]
+    if weekend_food:
+        savings = sum(e.predicted_spend for e in weekend_food) * 0.6
+        obs.append(
+            f"Cooking at home this weekend instead of eating out could save ~${savings:.0f}."
+        )
+
+    if risk == RiskLevel.HIGH:
+        obs.append(
+            f"High burn rate: ${total_predicted:.0f} predicted this week is over "
+            f"40% of your ${monthly_budget:.0f} monthly budget. Consider locking funds."
+        )
+    elif risk == RiskLevel.MED:
+        obs.append(
+            f"Moderate spend week: ${total_predicted:.0f} predicted. "
+            f"You have some breathing room but watch the social events."
+        )
+
+    return obs
 
 
 def generate_insights(
@@ -476,45 +567,78 @@ def create_vault_command(
     )
 
 
+def lookup_merchant_spend(merchant_name: str) -> MerchantLookupResponse:
+    """
+    Tool: lookup_merchant_spend
+    Checks the user's bank transaction history for a merchant and returns
+    average spend, confidence level, and sample size.
+    Use this to get data-driven cost estimates for specific venues or services.
+    """
+    if _get_merchant_average is None:
+        return MerchantLookupResponse(
+            merchant=merchant_name,
+            averageSpend=0.0,
+            confidence=0.0,
+            sampleSize=0,
+            matchedMerchant=None,
+            matchType="unavailable",
+        )
+    result = _get_merchant_average(merchant_name)
+    return MerchantLookupResponse(
+        merchant=merchant_name,
+        averageSpend=result["average_spend"],
+        confidence=result["confidence"],
+        sampleSize=result["sample_size"],
+        matchedMerchant=result.get("matched_merchant"),
+        matchType=result["match_type"],
+    )
+
+
 def generate_challenge_from_insights(
-    insights: list[Insight],
+    events: list[CalendarEvent],
     user_name: str = "You",
 ) -> ChallengesResponse:
     """
-    Tool: generate_challenge_from_insights
-    Auto-generates savings challenges based on detected spending patterns.
-    This is the gamification engine.
+    Tool: generate_challenges
+    Auto-generates savings challenges directly from calendar events.
+    Detects coffee habits, weekend dining, and social spend patterns.
     """
     challenges: list[Challenge] = []
     now = datetime.now()
     end_of_week = (now + timedelta(days=7 - now.weekday())).strftime("%Y-%m-%d")
     end_of_month = (now.replace(day=1) + timedelta(days=32)).replace(day=1).strftime("%Y-%m-%d")
 
-    for ins in insights:
-        if ins.type == InsightType.HABIT and "coffee" in ins.title.lower():
-            challenges.append(Challenge(
-                id=_stable_id("ch", "no-coffee"),
-                name="No Coffee Week",
-                goal=50.0,
-                unit="CAD",
-                endDate=end_of_week,
-                participants=12,
-                joined=False,
-                progress=0,
-                streak=0,
-                description="Skip café purchases for 7 days",
-            ))
-        if ins.type == InsightType.SAVING and "cook" in ins.title.lower():
-            challenges.append(Challenge(
-                id=_stable_id("ch", "weekend-cook"),
-                name="Weekend Cook-off",
-                goal=2.0,
-                unit="meals",
-                endDate=end_of_week,
-                participants=5,
-                joined=False,
-                description="Cook at home 2 weekend meals",
-            ))
+    coffee_events = [e for e in events if _COFFEE_RE.search(e.title)]
+    if coffee_events:
+        weekly_spend = sum(e.predicted_spend for e in coffee_events)
+        challenges.append(Challenge(
+            id=_stable_id("ch", "no-coffee"),
+            name="No Coffee Week",
+            goal=round(weekly_spend, 0),
+            unit="CAD",
+            endDate=end_of_week,
+            participants=12,
+            joined=False,
+            progress=0,
+            streak=0,
+            description=f"Skip café purchases for 7 days — save ~${weekly_spend:.0f}",
+        ))
+
+    weekend_food = [
+        e for e in events
+        if e.category == "food" and _parse_dt(e.start).weekday() >= 5
+    ]
+    if weekend_food:
+        challenges.append(Challenge(
+            id=_stable_id("ch", "weekend-cook"),
+            name="Weekend Cook-off",
+            goal=2.0,
+            unit="meals",
+            endDate=end_of_week,
+            participants=5,
+            joined=False,
+            description="Cook at home 2 weekend meals instead of eating out",
+        ))
 
     # Always offer a monthly saver challenge
     challenges.append(Challenge(
@@ -560,7 +684,8 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "name": "analyze_calendar_events",
             "description": (
                 "Takes raw Google Calendar event data and returns enriched events "
-                "with spend predictions, categories, calendar types, and explanations."
+                "with spend predictions (bank-history-backed where possible), "
+                "categories, calendar types, and explanations."
             ),
             "parameters": {
                 "type": "object",
@@ -594,7 +719,8 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "name": "generate_forecast",
             "description": (
                 "Aggregates enriched calendar events into a 7-day spending forecast "
-                "with daily breakdown, category totals, risk score, and savings actions."
+                "with daily breakdown, category totals, risk score, data-driven "
+                "observations, and savings action recommendations."
             ),
             "parameters": {
                 "type": "object",
@@ -614,15 +740,22 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
-            "name": "generate_insights",
+            "name": "lookup_merchant_spend",
             "description": (
-                "Produces actionable financial insights from calendar events and "
-                "forecast data. Detects patterns like transport spikes, social spend "
-                "triggers, and saving opportunities."
+                "Look up the user's real average spend at a specific merchant from "
+                "their bank transaction history. Use this when the user asks how much "
+                "they usually spend at a place (Starbucks, Uber, The Keg, etc.), or "
+                "to validate calendar event spend predictions."
             ),
             "parameters": {
                 "type": "object",
-                "properties": {},
+                "properties": {
+                    "merchant_name": {
+                        "type": "string",
+                        "description": "Name of the merchant or venue to look up",
+                    },
+                },
+                "required": ["merchant_name"],
             },
         },
     },
@@ -664,8 +797,8 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         "function": {
             "name": "generate_challenges",
             "description": (
-                "Auto-generate savings challenges and gamification elements "
-                "based on detected spending patterns and insights."
+                "Generate savings challenges and gamification elements based on "
+                "spending patterns detected in the user's calendar events."
             ),
             "parameters": {
                 "type": "object",

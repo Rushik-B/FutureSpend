@@ -23,6 +23,7 @@ from agent.tools import (
     generate_challenge_from_insights,
     generate_forecast,
     generate_insights,
+    lookup_merchant_spend,
 )
 from agent.schemas import CalendarEvent, ForecastResponse, Insight
 
@@ -98,19 +99,18 @@ def forecast_spending(monthly_budget: float = 1800.0, spent_so_far: float = 0.0)
 
 
 @mcp.tool()
-def get_insights() -> str:
-    """Generate actionable financial insights from calendar events and forecast.
+def lookup_merchant(merchant_name: str) -> str:
+    """Look up the user's real average spend at a specific merchant.
 
-    Call analyze_events and forecast_spending first. Detects patterns like
-    transport spikes, social spending triggers, coffee habits, and weekend
-    dining — then surfaces specific, actionable observations.
+    Checks bank transaction history for the merchant and returns average spend,
+    confidence level, and number of historical transactions. Works with partial
+    name matches (e.g. "Starbucks", "keg", "uber").
+
+    Args:
+        merchant_name: Name of the merchant or venue to look up
     """
-    if not _state["events"] or not _state["forecast"]:
-        return json.dumps({"error": "Need events and forecast first. Call analyze_events and forecast_spending."})
-
-    insights = generate_insights(_state["events"], _state["forecast"])
-    _state["insights"] = insights
-    return json.dumps([i.model_dump() for i in insights], indent=2, default=str)
+    result = lookup_merchant_spend(merchant_name)
+    return json.dumps(result.model_dump(by_alias=True), indent=2, default=str)
 
 
 @mcp.tool()
@@ -132,19 +132,19 @@ def vault_lock_unlock(action: str, amount: float, reason: str, vault_name: str =
 
 @mcp.tool()
 def generate_challenges(user_name: str = "You") -> str:
-    """Generate savings challenges based on detected spending patterns.
+    """Generate savings challenges based on calendar event patterns.
 
-    Call get_insights first. Auto-creates gamification challenges
-    (no-coffee week, weekend cook-off, monthly saver) based on the
-    specific patterns found in the user's calendar.
+    Call analyze_events first. Auto-creates gamification challenges
+    (no-coffee week, weekend cook-off, monthly saver) directly from
+    detected event patterns — no separate insights step needed.
 
     Args:
         user_name: User's display name for the leaderboard
     """
-    if not _state["insights"]:
-        return json.dumps({"error": "Need insights first. Call get_insights."})
+    if not _state["events"]:
+        return json.dumps({"error": "No events analyzed yet. Call analyze_events first."})
 
-    challenges = generate_challenge_from_insights(_state["insights"], user_name)
+    challenges = generate_challenge_from_insights(_state["events"], user_name)
     return json.dumps(challenges.model_dump(by_alias=True), indent=2, default=str)
 
 
@@ -165,10 +165,11 @@ def full_dashboard(monthly_budget: float = 1800.0, spent_so_far: float = 620.0) 
     forecast = generate_forecast(enriched, monthly_budget, spent_so_far)
     _state["forecast"] = forecast
 
+    # generate_insights still used internally for backwards compat insights array
     insights = generate_insights(enriched, forecast)
     _state["insights"] = insights
 
-    challenges = generate_challenge_from_insights(insights)
+    challenges = generate_challenge_from_insights(enriched)
 
     result = {
         "events": [e.model_dump(by_alias=True) for e in enriched],
