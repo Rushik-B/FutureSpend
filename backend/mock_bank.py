@@ -111,6 +111,194 @@ TRANSACTIONS: list[dict] = [
 
     # Marriott Hotel — weekend stay
     {"date": "2026-02-17", "merchant": "Marriott Hotel", "amount": 612.75, "category": "travel"},
+
+    # Extra Starbucks visits
+    {"date": "2026-02-26", "merchant": "Starbucks", "amount": 6.10, "category": "food"},
+    {"date": "2026-02-23", "merchant": "Starbucks", "amount": 5.90, "category": "food"},
+    {"date": "2026-02-19", "merchant": "Starbucks", "amount": 6.45, "category": "food"},
+    {"date": "2026-02-14", "merchant": "Starbucks", "amount": 7.05, "category": "food"},
+    {"date": "2026-02-11", "merchant": "Starbucks", "amount": 6.30, "category": "food"},
+    {"date": "2026-02-09", "merchant": "Starbucks", "amount": 5.80, "category": "food"},
+    {"date": "2026-02-06", "merchant": "Starbucks", "amount": 6.95, "category": "food"},
+    {"date": "2026-02-04", "merchant": "Starbucks", "amount": 5.60, "category": "food"},
+    {"date": "2026-02-03", "merchant": "Starbucks", "amount": 6.20, "category": "food"},
+    {"date": "2026-02-02", "merchant": "Starbucks", "amount": 7.15, "category": "food"},
+
+    # Extra Tim Hortons visits
+    {"date": "2026-02-28", "merchant": "Tim Hortons", "amount": 3.65, "category": "food"},
+    {"date": "2026-02-26", "merchant": "Tim Hortons", "amount": 4.10, "category": "food"},
+    {"date": "2026-02-22", "merchant": "Tim Hortons", "amount": 3.80, "category": "food"},
+    {"date": "2026-02-18", "merchant": "Tim Hortons", "amount": 4.05, "category": "food"},
+    {"date": "2026-02-16", "merchant": "Tim Hortons", "amount": 3.55, "category": "food"},
+    {"date": "2026-02-14", "merchant": "Tim Hortons", "amount": 4.20, "category": "food"},
+    {"date": "2026-02-10", "merchant": "Tim Hortons", "amount": 3.90, "category": "food"},
+    {"date": "2026-02-07", "merchant": "Tim Hortons", "amount": 4.05, "category": "food"},
+    {"date": "2026-02-05", "merchant": "Tim Hortons", "amount": 3.70, "category": "food"},
+    {"date": "2026-02-02", "merchant": "Tim Hortons", "amount": 4.15, "category": "food"},
+
+    # Extra Uber trips
+    {"date": "2026-02-27", "merchant": "Uber", "amount": 16.40, "category": "transport"},
+    {"date": "2026-02-25", "merchant": "Uber", "amount": 13.85, "category": "transport"},
+    {"date": "2026-02-21", "merchant": "Uber", "amount": 19.10, "category": "transport"},
+    {"date": "2026-02-19", "merchant": "Uber", "amount": 14.75, "category": "transport"},
+    {"date": "2026-02-17", "merchant": "Uber", "amount": 18.95, "category": "transport"},
+    {"date": "2026-02-14", "merchant": "Uber", "amount": 12.60, "category": "transport"},
+    {"date": "2026-02-12", "merchant": "Uber", "amount": 20.35, "category": "transport"},
+    {"date": "2026-02-10", "merchant": "Uber", "amount": 15.25, "category": "transport"},
+    {"date": "2026-02-06", "merchant": "Uber", "amount": 13.40, "category": "transport"},
+    {"date": "2026-02-03", "merchant": "Uber", "amount": 17.80, "category": "transport"},
+
+    # Extra Sobeys grocery trips
+    {"date": "2026-02-25", "merchant": "Sobeys", "amount": 88.60, "category": "grocery"},
+    {"date": "2026-02-23", "merchant": "Sobeys", "amount": 97.25, "category": "grocery"},
+    {"date": "2026-02-19", "merchant": "Sobeys", "amount": 102.85, "category": "grocery"},
+    {"date": "2026-02-16", "merchant": "Sobeys", "amount": 89.40, "category": "grocery"},
+    {"date": "2026-02-11", "merchant": "Sobeys", "amount": 107.95, "category": "grocery"},
+    {"date": "2026-02-09", "merchant": "Sobeys", "amount": 92.15, "category": "grocery"},
+    {"date": "2026-02-06", "merchant": "Sobeys", "amount": 98.70, "category": "grocery"},
+    {"date": "2026-02-04", "merchant": "Sobeys", "amount": 86.55, "category": "grocery"},
+    {"date": "2026-02-02", "merchant": "Sobeys", "amount": 115.20, "category": "grocery"},
+    {"date": "2026-01-31", "merchant": "Sobeys", "amount": 101.80, "category": "grocery"},
+
+    # Extra Walmart Supercentre trips
+    {"date": "2026-02-25", "merchant": "Walmart Supercentre", "amount": 149.20, "category": "grocery"},
+    {"date": "2026-02-22", "merchant": "Walmart Supercentre", "amount": 138.75, "category": "grocery"},
+    {"date": "2026-02-19", "merchant": "Walmart Supercentre", "amount": 154.30, "category": "grocery"},
+    {"date": "2026-02-15", "merchant": "Walmart Supercentre", "amount": 143.95, "category": "grocery"},
+    {"date": "2026-02-12", "merchant": "Walmart Supercentre", "amount": 152.40, "category": "grocery"},
+    {"date": "2026-02-10", "merchant": "Walmart Supercentre", "amount": 139.85, "category": "grocery"},
+    {"date": "2026-02-07", "merchant": "Walmart Supercentre", "amount": 160.10, "category": "grocery"},
+    {"date": "2026-02-05", "merchant": "Walmart Supercentre", "amount": 141.35, "category": "grocery"},
+    {"date": "2026-02-01", "merchant": "Walmart Supercentre", "amount": 147.90, "category": "grocery"},
+    {"date": "2026-01-31", "merchant": "Walmart Supercentre", "amount": 155.25, "category": "grocery"},
+
+    # Extra Amazon orders
+    {"date": "2026-02-26", "merchant": "Amazon", "amount": 52.40, "category": "shopping"},
+    {"date": "2026-02-24", "merchant": "Amazon", "amount": 47.99, "category": "shopping"},
+    {"date": "2026-02-21", "merchant": "Amazon", "amount": 63.10, "category": "shopping"},
+    {"date": "2026-02-18", "merchant": "Amazon", "amount": 58.75, "category": "shopping"},
+    {"date": "2026-02-16", "merchant": "Amazon", "amount": 42.60, "category": "shopping"},
+    {"date": "2026-02-13", "merchant": "Amazon", "amount": 69.20, "category": "shopping"},
+    {"date": "2026-02-11", "merchant": "Amazon", "amount": 37.95, "category": "shopping"},
+    {"date": "2026-02-08", "merchant": "Amazon", "amount": 55.10, "category": "shopping"},
+    {"date": "2026-02-03", "merchant": "Amazon", "amount": 61.45, "category": "shopping"},
+    {"date": "2026-02-01", "merchant": "Amazon", "amount": 49.80, "category": "shopping"},
+
+    # Extra Calgary Transit rides
+    {"date": "2026-02-27", "merchant": "Calgary Transit", "amount": 3.50, "category": "transport"},
+    {"date": "2026-02-26", "merchant": "Calgary Transit", "amount": 3.25, "category": "transport"},
+    {"date": "2026-02-24", "merchant": "Calgary Transit", "amount": 3.50, "category": "transport"},
+    {"date": "2026-02-21", "merchant": "Calgary Transit", "amount": 3.25, "category": "transport"},
+    {"date": "2026-02-19", "merchant": "Calgary Transit", "amount": 3.50, "category": "transport"},
+    {"date": "2026-02-17", "merchant": "Calgary Transit", "amount": 3.25, "category": "transport"},
+    {"date": "2026-02-15", "merchant": "Calgary Transit", "amount": 3.50, "category": "transport"},
+    {"date": "2026-02-13", "merchant": "Calgary Transit", "amount": 3.25, "category": "transport"},
+    {"date": "2026-02-09", "merchant": "Calgary Transit", "amount": 3.50, "category": "transport"},
+    {"date": "2026-02-07", "merchant": "Calgary Transit", "amount": 3.25, "category": "transport"},
+
+    # Extra DoorDash deliveries
+    {"date": "2026-02-27", "merchant": "DoorDash", "amount": 33.40, "category": "food"},
+    {"date": "2026-02-25", "merchant": "DoorDash", "amount": 29.95, "category": "food"},
+    {"date": "2026-02-22", "merchant": "DoorDash", "amount": 34.60, "category": "food"},
+    {"date": "2026-02-18", "merchant": "DoorDash", "amount": 30.25, "category": "food"},
+    {"date": "2026-02-16", "merchant": "DoorDash", "amount": 32.80, "category": "food"},
+    {"date": "2026-02-13", "merchant": "DoorDash", "amount": 29.70, "category": "food"},
+    {"date": "2026-02-11", "merchant": "DoorDash", "amount": 35.15, "category": "food"},
+    {"date": "2026-02-07", "merchant": "DoorDash", "amount": 31.40, "category": "food"},
+    {"date": "2026-02-05", "merchant": "DoorDash", "amount": 33.90, "category": "food"},
+    {"date": "2026-02-03", "merchant": "DoorDash", "amount": 30.80, "category": "food"},
+
+    # Extra SkipTheDishes deliveries
+    {"date": "2026-02-28", "merchant": "SkipTheDishes", "amount": 28.20, "category": "food"},
+    {"date": "2026-02-26", "merchant": "SkipTheDishes", "amount": 30.10, "category": "food"},
+    {"date": "2026-02-24", "merchant": "SkipTheDishes", "amount": 27.75, "category": "food"},
+    {"date": "2026-02-20", "merchant": "SkipTheDishes", "amount": 29.60, "category": "food"},
+    {"date": "2026-02-17", "merchant": "SkipTheDishes", "amount": 26.95, "category": "food"},
+    {"date": "2026-02-15", "merchant": "SkipTheDishes", "amount": 28.70, "category": "food"},
+    {"date": "2026-02-11", "merchant": "SkipTheDishes", "amount": 30.25, "category": "food"},
+    {"date": "2026-02-09", "merchant": "SkipTheDishes", "amount": 27.40, "category": "food"},
+    {"date": "2026-02-04", "merchant": "SkipTheDishes", "amount": 29.95, "category": "food"},
+    {"date": "2026-02-02", "merchant": "SkipTheDishes", "amount": 28.60, "category": "food"},
+
+    # Extra Shoppers Drug Mart visits
+    {"date": "2026-02-26", "merchant": "Shoppers Drug Mart", "amount": 34.20, "category": "health"},
+    {"date": "2026-02-24", "merchant": "Shoppers Drug Mart", "amount": 42.10, "category": "health"},
+    {"date": "2026-02-21", "merchant": "Shoppers Drug Mart", "amount": 37.85, "category": "health"},
+    {"date": "2026-02-16", "merchant": "Shoppers Drug Mart", "amount": 33.40, "category": "health"},
+    {"date": "2026-02-14", "merchant": "Shoppers Drug Mart", "amount": 39.95, "category": "health"},
+    {"date": "2026-02-12", "merchant": "Shoppers Drug Mart", "amount": 36.75, "category": "health"},
+    {"date": "2026-02-09", "merchant": "Shoppers Drug Mart", "amount": 41.30, "category": "health"},
+    {"date": "2026-02-05", "merchant": "Shoppers Drug Mart", "amount": 35.60, "category": "health"},
+    {"date": "2026-02-03", "merchant": "Shoppers Drug Mart", "amount": 38.45, "category": "health"},
+    {"date": "2026-02-01", "merchant": "Shoppers Drug Mart", "amount": 40.10, "category": "health"},
+
+    # Niche/local coffee & food
+    {"date": "2026-02-28", "merchant": "Little Owl Coffee", "amount": 7.10, "category": "food"},
+    {"date": "2026-02-26", "merchant": "Neighbourhood Bakery", "amount": 9.50, "category": "food"},
+    {"date": "2026-02-24", "merchant": "Food Truck - Taco Loco", "amount": 13.25, "category": "food"},
+    {"date": "2026-02-22", "merchant": "Local Farmers Market", "amount": 26.80, "category": "grocery"},
+    {"date": "2026-02-19", "merchant": "Bubble Tea Corner", "amount": 8.40, "category": "food"},
+
+    # Pets
+    {"date": "2026-02-27", "merchant": "PetSmart", "amount": 54.99, "category": "pets"},
+    {"date": "2026-02-18", "merchant": "Downtown Vet Clinic", "amount": 120.00, "category": "pets"},
+    {"date": "2026-02-09", "merchant": "Local Pet Groomer", "amount": 72.50, "category": "pets"},
+
+    # Hobbies & books
+    {"date": "2026-02-25", "merchant": "The Local Bookshop", "amount": 27.45, "category": "entertainment"},
+    {"date": "2026-02-20", "merchant": "Board Game Café", "amount": 21.30, "category": "entertainment"},
+    {"date": "2026-02-13", "merchant": "Art Supply House", "amount": 46.90, "category": "shopping"},
+
+    # Home & hardware
+    {"date": "2026-02-23", "merchant": "Home Depot", "amount": 89.75, "category": "home"},
+    {"date": "2026-02-17", "merchant": "Canadian Tire", "amount": 64.20, "category": "home"},
+    {"date": "2026-02-08", "merchant": "IKEA", "amount": 132.99, "category": "home"},
+
+    # Utilities & bills
+    {"date": "2026-02-05", "merchant": "Enmax Energy", "amount": 92.15, "category": "utilities"},
+    {"date": "2026-02-03", "merchant": "Calgary Water Services", "amount": 48.60, "category": "utilities"},
+    {"date": "2026-02-01", "merchant": "Telus Mobility", "amount": 78.00, "category": "phone"},
+    {"date": "2026-02-01", "merchant": "Shaw Internet", "amount": 85.99, "category": "internet"},
+
+    # Personal care
+    {"date": "2026-02-27", "merchant": "Downtown Barber Shop", "amount": 32.00, "category": "personal_care"},
+    {"date": "2026-02-15", "merchant": "Spa On 8th", "amount": 110.50, "category": "personal_care"},
+
+    # Parking & transit extras
+    {"date": "2026-02-26", "merchant": "City of Calgary Parking", "amount": 9.25, "category": "transport"},
+    {"date": "2026-02-19", "merchant": "Indigo Parkade", "amount": 14.00, "category": "transport"},
+
+    # Alcohol & nightlife
+    {"date": "2026-02-24", "merchant": "Co-op Wine Spirits Beer", "amount": 43.75, "category": "entertainment"},
+    {"date": "2026-02-17", "merchant": "Local Pub - The Fox", "amount": 58.20, "category": "entertainment"},
+
+    # Gifts & charity
+    {"date": "2026-02-21", "merchant": "Etsy Marketplace", "amount": 34.10, "category": "shopping"},
+    {"date": "2026-02-14", "merchant": "Flower Shop - Bloom", "amount": 62.50, "category": "gift"},
+    {"date": "2026-02-10", "merchant": "Red Cross Donation", "amount": 25.00, "category": "charity"},
+
+    # Digital tools & SaaS
+    {"date": "2026-02-11", "merchant": "Notion Labs", "amount": 12.00, "category": "subscription"},
+    {"date": "2026-02-09", "merchant": "Figma", "amount": 20.00, "category": "subscription"},
+    {"date": "2026-02-04", "merchant": "Canva Pro", "amount": 16.99, "category": "subscription"},
+
+    # Learning & courses
+    {"date": "2026-02-18", "merchant": "Udemy", "amount": 19.99, "category": "education"},
+    {"date": "2026-02-06", "merchant": "Coursera", "amount": 49.00, "category": "education"},
+
+    # Local experiences
+    {"date": "2026-02-23", "merchant": "Escape Room YYC", "amount": 78.00, "category": "entertainment"},
+    {"date": "2026-02-12", "merchant": "Indoor Climbing Gym", "amount": 29.50, "category": "fitness"},
+    {"date": "2026-02-02", "merchant": "Axe Throwing League", "amount": 44.25, "category": "entertainment"},
+
+    # Insurance & admin
+    {"date": "2026-02-07", "merchant": "TD Insurance", "amount": 128.40, "category": "insurance"},
+    {"date": "2026-02-05", "merchant": "Driver's License Renewal", "amount": 93.00, "category": "admin"},
+
+    # Misc small charges
+    {"date": "2026-02-28", "merchant": "App Store - Tip Jar", "amount": 2.99, "category": "entertainment"},
+    {"date": "2026-02-19", "merchant": "Vending Machine", "amount": 3.25, "category": "food"},
+    {"date": "2026-02-16", "merchant": "Office Coffee Fund", "amount": 4.00, "category": "food"},
 ]
 
 

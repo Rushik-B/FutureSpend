@@ -18,6 +18,8 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from datetime import datetime, timedelta
+
 from agent.tools import (
     analyze_calendar_events,
     create_vault_command,
@@ -27,6 +29,7 @@ from agent.tools import (
     lookup_merchant_spend,
 )
 from agent.schemas import CalendarEvent, ForecastResponse, Insight
+from mock_bank import TRANSACTIONS
 
 mcp = FastMCP("FutureSpend")
 
@@ -112,6 +115,27 @@ def lookup_merchant(merchant_name: str) -> str:
     """
     result = lookup_merchant_spend(merchant_name)
     return json.dumps(result.model_dump(by_alias=True), indent=2, default=str)
+
+
+@mcp.tool()
+def recent_spending(days: int = 10) -> str:
+    """Show all transactions from the past N days.
+
+    Returns a list of recent bank transactions including merchant name,
+    amount, category, and date. Use this to answer questions like
+    "where have I spent money recently?" or "what did I buy last week?".
+
+    Args:
+        days: Number of days to look back (default: 10)
+    """
+    cutoff = datetime.now() - timedelta(days=days)
+    recent = [
+        tx for tx in TRANSACTIONS
+        if datetime.strptime(tx["date"], "%Y-%m-%d") >= cutoff
+    ]
+    recent.sort(key=lambda tx: tx["date"], reverse=True)
+    total = round(sum(tx["amount"] for tx in recent), 2)
+    return json.dumps({"transactions": recent, "total_spent": total, "days": days}, indent=2)
 
 
 @mcp.tool()
