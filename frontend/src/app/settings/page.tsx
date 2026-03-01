@@ -26,7 +26,7 @@ export default function SettingsPage() {
   const handleSave = () => {
     const parsedBudget = Number(monthlyBudget);
     const normalizedBudget =
-      Number.isFinite(parsedBudget) && parsedBudget >= 0
+      Number.isFinite(parsedBudget) && parsedBudget > 0
         ? parsedBudget
         : DEFAULT_MONTHLY_BUDGET;
     setStoredMonthlyBudget(normalizedBudget);
@@ -109,7 +109,7 @@ export default function SettingsPage() {
                 <input
                   id="budget"
                   type="number"
-                  min="0"
+                  min="1"
                   value={monthlyBudget}
                   onChange={(e) => setMonthlyBudget(e.target.value)}
                   className="w-full bg-surface-3 border border-white/[0.08] text-zinc-200 placeholder:text-zinc-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent-blue/40 transition-colors"

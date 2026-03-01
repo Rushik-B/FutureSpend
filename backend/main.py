@@ -663,12 +663,15 @@ def coach_chat(request: CoachChatRequest):
     """
     orchestrator = _get_orchestrator(request.session_id)
 
-    # Auto-bootstrap calendar context on cold sessions so coach replies are event-aware.
+    # Refresh coach context whenever the frontend provides explicit events.
+    # This keeps budget + event state in sync across pages and repeat chats.
     events_to_use = request.events
+    should_refresh_context = bool(events_to_use)
     if not events_to_use and not orchestrator.state.events:
         events_to_use = _MOCK_CALENDAR_EVENTS
+        should_refresh_context = True
 
-    if events_to_use and not orchestrator.state.events:
+    if events_to_use and should_refresh_context:
         orchestrator.run_pipeline(
             raw_events=events_to_use,
             monthly_budget=request.monthly_budget,

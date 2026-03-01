@@ -82,6 +82,7 @@ class ForecastResponse(BaseModel):
     risk_score: RiskLevel = Field(alias="riskScore")
     daily: list[DailyForecast]
     by_category: list[CategoryBreakdown] = Field(alias="byCategory")
+    observations: list[str] = Field(default_factory=list)
     recommended_actions: list[RecommendedAction] = Field(
         default_factory=list, alias="recommendedActions"
     )
@@ -105,6 +106,17 @@ class Insight(BaseModel):
     title: str
     description: str
     type: InsightType = InsightType.SPEND
+
+
+class MerchantLookupResponse(BaseModel):
+    merchant: str
+    average_spend: float = Field(alias="averageSpend")
+    confidence: float
+    sample_size: int = Field(alias="sampleSize")
+    matched_merchant: str | None = Field(default=None, alias="matchedMerchant")
+    match_type: str = Field(alias="matchType")
+
+    model_config = {"populate_by_name": True}
 
 
 # ── Challenges / Gamification ───────────────────────────────────────────────

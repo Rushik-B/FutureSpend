@@ -12,8 +12,10 @@ import {
   Sparkle,
 } from "@phosphor-icons/react";
 import { PageShell } from "@/components/layout/PageShell";
+import { FormattedAssistantMessage } from "@/components/ai/FormattedAssistantMessage";
 import { api } from "@/lib/api";
 import { getStoredMonthlyBudget } from "@/lib/preferences";
+import { createChatSessionId } from "@/lib/session";
 import type { CalendarEvent } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -89,6 +91,7 @@ export default function CoachPage() {
   const [streamId, setStreamId] = useState<string | null>(null);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [monthlyBudget, setMonthlyBudget] = useState(getStoredMonthlyBudget);
+  const [sessionId] = useState(() => createChatSessionId("coach"));
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -130,7 +133,7 @@ export default function CoachPage() {
     const storedBudget = getStoredMonthlyBudget();
 
     api
-      .getDashboard({ monthlyBudget: storedBudget })
+      .getDashboard({ monthlyBudget: storedBudget, sessionId })
       .then((data) => {
         if (cancelled) return;
         setCalendarEvents(data.events ?? []);
@@ -141,7 +144,7 @@ export default function CoachPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sessionId]);
 
   /* ─── Auto-resize textarea (up to 5 lines) ─── */
   const resizeTextarea = useCallback(() => {
@@ -181,22 +184,18 @@ export default function CoachPage() {
         setStreamId(aId); // triggers the animation useEffect
       };
 
-      if (process.env.NEXT_PUBLIC_API_URL) {
-        try {
-          const res = await api.coachChat(trimmed, "default", calendarEvents, monthlyBudget);
-          startStream(res.reply.content, res.actions);
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Coach is unavailable right now.";
-          startStream(message);
-        }
-      } else {
-        startStream("Coach is unavailable until NEXT_PUBLIC_API_URL is configured.");
+      try {
+        const res = await api.coachChat(trimmed, sessionId, calendarEvents, monthlyBudget);
+        startStream(res.reply.content, res.actions);
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Coach is unavailable right now.";
+        startStream(message);
       }
     },
-    [calendarEvents, isLoading, monthlyBudget]
+    [calendarEvents, isLoading, monthlyBudget, sessionId]
   );
 
   /* ─── Keyboard: Enter sends, Shift+Enter is newline ─── */
@@ -309,7 +308,14 @@ export default function CoachPage() {
                         : "max-w-3xl rounded-[1.6rem] rounded-tl-md border border-white/[0.08] bg-black/10 px-5 py-4 shadow-[0_30px_60px_-44px_rgba(46,144,250,0.6)]"
                     )}
                   >
-                    {msg.content}
+                    {msg.role === "assistant" ? (
+                      <FormattedAssistantMessage
+                        content={msg.content}
+                        className="text-base font-semibold leading-8 text-white sm:text-lg"
+                      />
+                    ) : (
+                      msg.content
+                    )}
                     {/* Streaming cursor */}
                     {msg.id === streamId && (
                       <span className="ml-0.5 inline-block h-[1.2em] w-[3px] animate-pulse bg-white align-middle" />

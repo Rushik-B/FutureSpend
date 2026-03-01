@@ -11,7 +11,9 @@ import {
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { FormattedAssistantMessage } from "@/components/ai/FormattedAssistantMessage";
 import { getStoredMonthlyBudget } from "@/lib/preferences";
+import { createChatSessionId } from "@/lib/session";
 import type { CalendarEvent } from "@/lib/types";
 
 interface Message {
@@ -51,32 +53,13 @@ function AiAvatar() {
   );
 }
 
-function RichAssistantText({ content }: { content: string }) {
-  return (
-    <div className="prose prose--ai-chat">
-      {content.split("\n").map((line, i) => {
-        if (!line.trim()) {
-          return null;
-        }
-        const parts = line.split(/\*\*(.*?)\*\*/g);
-        return (
-          <p key={i}>
-            {parts.map((part, j) =>
-              j % 2 === 1 ? <strong key={j}>{part}</strong> : <span key={j}>{part}</span>
-            )}
-          </p>
-        );
-      })}
-    </div>
-  );
-}
-
 export function AISidebar({ isOpen, onClose }: AISidebarProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [monthlyBudget, setMonthlyBudget] = useState(getStoredMonthlyBudget);
+  const [sessionId, setSessionId] = useState(() => createChatSessionId("sidebar"));
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -95,22 +78,30 @@ export function AISidebar({ isOpen, onClose }: AISidebarProps) {
   }, [isOpen]);
 
   useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
     let cancelled = false;
     const storedBudget = getStoredMonthlyBudget();
 
     api
-      .getDashboard({ monthlyBudget: storedBudget })
+      .getDashboard({ monthlyBudget: storedBudget, sessionId })
       .then((data) => {
         if (cancelled) return;
-        setCalendarEvents(data.events);
-        setMonthlyBudget(data.forecast.monthlyBudget ?? storedBudget);
+        setCalendarEvents(data.events ?? []);
+        setMonthlyBudget(data.forecast?.monthlyBudget ?? storedBudget);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (cancelled) return;
+        setCalendarEvents([]);
+        setMonthlyBudget(storedBudget);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isOpen, sessionId]);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -133,17 +124,13 @@ export function AISidebar({ isOpen, onClose }: AISidebarProps) {
 
       let reply = "";
       try {
-        if (process.env.NEXT_PUBLIC_API_URL) {
-          const res = await api.coachChat(
-            content.trim(),
-            "sidebar",
-            calendarEvents,
-            monthlyBudget
-          );
-          reply = res.reply.content;
-        } else {
-          reply = "AI assistant is unavailable until NEXT_PUBLIC_API_URL is configured.";
-        }
+        const res = await api.coachChat(
+          content.trim(),
+          sessionId,
+          calendarEvents,
+          monthlyBudget
+        );
+        reply = res.reply.content;
       } catch (error) {
         reply =
           error instanceof Error
@@ -159,7 +146,7 @@ export function AISidebar({ isOpen, onClose }: AISidebarProps) {
       setMessages((prev) => [...prev, assistantMsg]);
       setIsStreaming(false);
     },
-    [calendarEvents, isStreaming, monthlyBudget]
+    [calendarEvents, isStreaming, monthlyBudget, sessionId]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -179,6 +166,7 @@ export function AISidebar({ isOpen, onClose }: AISidebarProps) {
   const resetChat = () => {
     setMessages([]);
     setInput("");
+    setSessionId(createChatSessionId("sidebar"));
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
     }
@@ -278,7 +266,10 @@ export function AISidebar({ isOpen, onClose }: AISidebarProps) {
               msg.role === "assistant" ? (
                 <div key={msg.id} className="flex items-start gap-3 mb-6">
                   <AiAvatar />
-                  <RichAssistantText content={msg.content} />
+                  <FormattedAssistantMessage
+                    content={msg.content}
+                    className="max-w-[85%] text-sm text-primary"
+                  />
                 </div>
               ) : (
                 <div

@@ -11,6 +11,7 @@ import type {
   LeaderboardEntry,
 } from "@/lib/types";
 import { getStoredMonthlyBudget } from "@/lib/preferences";
+import { getStoredSessionId } from "@/lib/session";
 
 interface DashboardQueryOptions {
   monthlyBudget?: number;
@@ -19,10 +20,20 @@ interface DashboardQueryOptions {
 }
 
 const getBaseUrl = (): string => {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL ?? "";
+  const configuredBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (configuredBaseUrl) {
+    return configuredBaseUrl;
   }
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+  if (typeof window === "undefined") {
+    return "http://localhost:8000";
+  }
+
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    return "http://localhost:8000";
+  }
+
+  return "";
 };
 
 function buildQueryString(params: Record<string, string | number | undefined>): string {
@@ -40,7 +51,7 @@ function buildDashboardQuery(options: DashboardQueryOptions = {}): string {
   return buildQueryString({
     monthly_budget: monthlyBudget,
     spent_so_far: options.spentSoFar,
-    session_id: options.sessionId,
+    session_id: options.sessionId ?? getStoredSessionId(),
   });
 }
 
@@ -144,7 +155,7 @@ export const api = {
   /** AI coach chat. */
   coachChat: (
     message: string,
-    session_id = "default",
+    session_id = getStoredSessionId(),
     events: CalendarEvent[] = [],
     monthly_budget = getStoredMonthlyBudget()
   ) =>
@@ -176,14 +187,20 @@ export const api = {
   bankLock: (amount: number, vault_name = "default", reason = "savings") =>
     request<{ ok: boolean; error?: string; checking_after?: number; vault_after?: number }>(
       "/api/bank/lock",
-      { method: "POST", body: { action: "lock", amount, vault_name, reason, session_id: "default" } }
+      {
+        method: "POST",
+        body: { action: "lock", amount, vault_name, reason, session_id: getStoredSessionId() },
+      }
     ),
 
   /** Unlock funds from a vault. */
   bankUnlock: (amount: number, vault_name = "default", reason = "withdrawal") =>
     request<{ ok: boolean; error?: string; checking_after?: number; vault_after?: number }>(
       "/api/bank/unlock",
-      { method: "POST", body: { action: "unlock", amount, vault_name, reason, session_id: "default" } }
+      {
+        method: "POST",
+        body: { action: "unlock", amount, vault_name, reason, session_id: getStoredSessionId() },
+      }
     ),
 
   /** Run full pipeline with custom events (returns events, forecast, insights, challenges). */
@@ -191,7 +208,7 @@ export const api = {
     events: CalendarEvent[],
     monthly_budget = getStoredMonthlyBudget(),
     spent_so_far = 0,
-    session_id = "default"
+    session_id = getStoredSessionId()
   ) =>
     request<{
       events: CalendarEvent[];
