@@ -4,10 +4,11 @@ FutureSpend MCP Server.
 Exposes the FutureSpend financial tools via the Model Context Protocol,
 so any MCP-compatible client (Claude Desktop, Cursor, etc.) can use them.
 
-Run with:
-    python mcp_server.py
-    # or
-    mcp run mcp_server.py
+Run with FastMCP CLI:
+    fastmcp run backend/mcp_server.py
+
+For FastMCP Cloud deployment, use the entrypoint:
+    backend/mcp_server.py:mcp
 """
 
 from __future__ import annotations
@@ -199,5 +200,7 @@ def server_status() -> str:
     })
 
 
-if __name__ == "__main__":
-    mcp.run()
+# NOTE:
+# Do not call mcp.run() in this module. FastMCP Cloud manages the server
+# lifecycle itself, and calling run() here can trigger nested event-loop
+# startup errors ("Already running asyncio in this thread").
